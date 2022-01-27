@@ -18,7 +18,6 @@ type Props = {
 // TODO: intentionally keeping this separate from props until I can think more about architecture, don't want to unreasonably couple model to props
 type WorldModel = { width: number; height: number; elementChunks: ElementChunkModel[][]; }
 
-// TODO: This should probably stay 1 not be changed to 4.
 function getDelta(direction: Direction) {
   switch (direction) {
     case 'left':
@@ -32,24 +31,19 @@ function getDelta(direction: Direction) {
   }
 }
 
-// TODO: This is broken because elementChunks knows gridSize is 4, but ants get placed on uneven grid locations.
 function isLegalDirection(ant: AntModel, direction: Direction, world: WorldModel) {
-  // TODO: to implement this I need to be able to look up world state at a given x/y coordinate
-
   const delta = getDelta(direction);
   const newX = ant.x + delta.x;
   const newY = ant.y + delta.y;
 
-  console.log('newX/newY', newX, newY);
-
   // Check that there is air ahead
-  if (newX < 0 || newX >= world.width || newY < 0 || newY >= world.height || world.elementChunks[newY / config.gridSize][newX / config.gridSize].type !== 'air' ) {
+  if (newX < 0 || newX >= world.width || newY < 0 || newY >= world.height || world.elementChunks[newY][newX].type !== 'air') {
     return false;
   }
 
   // TODO: I removed what appears to be excessive safeguards here, but perhaps I've misunderstood.
   // Check that there is solid footing
-  if (world.elementChunks[newY + 1][newX].type === 'air' ) {
+  if (world.elementChunks[newY + 1][newX].type === 'air') {
     return false;
   }
 
@@ -89,7 +83,8 @@ function turn(ant: AntModel, world: WorldModel) {
   console.log('turning');
 
   const oppositeDirection = getOppositeDirection(ant.direction);
-  if (isLegalDirection(ant, oppositeDirection, world)){
+  if (isLegalDirection(ant, oppositeDirection, world)) {
+    console.log('turning around');
     return { ...ant, direction: oppositeDirection }
   }
 
@@ -141,7 +136,7 @@ function moveAnts(ants: AntModel[], world: WorldModel) {
         //   turn(ant);
         // } else {
         return wander(movingAnt, world);
-        // }
+      // }
       case 'carrying':
         const dropRoll = Math.random() % 1000;
 
@@ -169,13 +164,30 @@ function World({ width, height, elementChunks }: Props) {
 
   return (
     <>
-      <Container position={[0, height - dirtTotalHeight]} interactiveChildren={false}>
-        {ants.map(ant => (<Ant {...ant} />))}
+      <Container position={[0, (height - dirtTotalHeight) * config.gridSize]} interactiveChildren={false}>
+        {ants.map(ant => {
+          return (
+            <Ant
+              x={ant.x * config.gridSize}
+              y={ant.y * config.gridSize}
+              direction={ant.direction}
+            />
+          );
+        })}
       </Container>
 
       <Container interactiveChildren={false}>
         { /* NOTE: It's probably wrong to code this like this - performance */}
-        {elementChunks.map(elementChunkRow => elementChunkRow.map(elementChunk => <DirtChunk {...elementChunk} />))}
+        {elementChunks.map((elementChunkRow, rowIndex) => elementChunkRow.map((elementChunk, columnIndex) => {
+          return (
+            <DirtChunk
+              x={columnIndex * config.gridSize}
+              y={(height - rowIndex) * config.gridSize}
+              width={elementChunk.width * config.gridSize}
+              height={elementChunk.height * config.gridSize}
+            />
+          );
+        }))}
       </Container>
     </>
   );

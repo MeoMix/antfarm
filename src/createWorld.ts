@@ -8,18 +8,17 @@ export type ElementChunk = {
   height: number;
 }
 
-// TODO: I don't think elementChunkSize should come into play here, maybe.
-function createWorld(width: number, height: number, dirtPercent: number, elementChunkSize: number) {
+function createWorld(width: number, height: number, dirtPercent: number) {
   const dirtTotalHeight = height * dirtPercent;
 
-  const elementChunks = Array.from({ length: dirtTotalHeight / elementChunkSize }, (_, columnIndex) => {
-    return Array.from({ length: width / elementChunkSize }, (_, rowIndex) => {
+  const elementChunks = Array.from({ length: dirtTotalHeight }, (_, columnIndex) => {
+    return Array.from({ length: width }, (_, rowIndex) => {
       return {
         type: 'dirt' as const,
-        x: rowIndex * elementChunkSize,
-        y: height - (columnIndex * elementChunkSize),
-        width: elementChunkSize,
-        height: elementChunkSize,
+        x: rowIndex,
+        y: height - columnIndex,
+        width: 1,
+        height: 1,
       } as ElementChunk
     });
   });

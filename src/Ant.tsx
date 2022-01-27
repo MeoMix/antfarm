@@ -9,7 +9,6 @@ type Props = {
 }
 
 function Ant({ x, y, direction }: Props) {
-  console.log('ant component', x, y);
   const xFlip = direction === 'right' ? 1 : -1;
 
   return (

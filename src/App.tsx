@@ -19,7 +19,10 @@ function App() {
   const stageWidth = 900;
   const stageHeight = 600;
 
-  const world = createWorld(900, 600, config.initialDirtPercent, config.gridSize);
+  // TODO: Careful, stageWidth/height needs to be divisible by gridSize for now
+  const world = createWorld(900 / config.gridSize, 600 / config.gridSize, config.initialDirtPercent);
+
+  console.log('world', world);
 
   return (
     <div className="App">

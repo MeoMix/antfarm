@@ -1,7 +1,7 @@
 const config = {
   compactSandDepth: 15, // sand turns to dirt when stacked this high
   initialDirtPercent: 2 / 3,
-  initialAntCount: 5,
+  initialAntCount: 1,
   gridSize: 4,
 
   probabilities: {
