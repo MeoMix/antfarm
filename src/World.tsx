@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Container, useTick } from '@inlet/react-pixi';
 import Ant from './Ant';
 import config from './config';
@@ -6,27 +6,57 @@ import DirtChunk from './DirtChunk';
 import createAnt, { getTimer } from './createAnt';
 import type { Ant as AntModel } from './createAnt';
 import type { Direction } from './types';
+import { getOppositeDirection } from './util';
+import type { ElementChunk as ElementChunkModel } from './createWorld';
 
 type Props = {
   width: number;
   height: number;
+  elementChunks: ElementChunkModel[][];
 }
+
+// TODO: intentionally keeping this separate from props until I can think more about architecture, don't want to unreasonably couple model to props
+type WorldModel = { width: number; height: number; elementChunks: ElementChunkModel[][]; }
 
 // TODO: This should probably stay 1 not be changed to 4.
 function getDelta(direction: Direction) {
   switch (direction) {
     case 'left':
-      return { x: -4, y: 0 };
+      return { x: -1, y: 0 };
     case 'right':
-      return { x: 4, y: 0 };
+      return { x: 1, y: 0 };
     case 'up':
-      return { x: 0, y: -4 };
+      return { x: 0, y: -1 };
     case 'down':
-      return { x: 0, y: 4 };
+      return { x: 0, y: 1 };
   }
 }
 
-function move(ant: AntModel, worldWidth: number, worldHeight: number) {
+// TODO: This is broken because elementChunks knows gridSize is 4, but ants get placed on uneven grid locations.
+function isLegalDirection(ant: AntModel, direction: Direction, world: WorldModel) {
+  // TODO: to implement this I need to be able to look up world state at a given x/y coordinate
+
+  const delta = getDelta(direction);
+  const newX = ant.x + delta.x;
+  const newY = ant.y + delta.y;
+
+  console.log('newX/newY', newX, newY);
+
+  // Check that there is air ahead
+  if (newX < 0 || newX >= world.width || newY < 0 || newY >= world.height || world.elementChunks[newY / config.gridSize][newX / config.gridSize].type !== 'air' ) {
+    return false;
+  }
+
+  // TODO: I removed what appears to be excessive safeguards here, but perhaps I've misunderstood.
+  // Check that there is solid footing
+  if (world.elementChunks[newY + 1][newX].type === 'air' ) {
+    return false;
+  }
+
+  return true;
+}
+
+function move(ant: AntModel, world: WorldModel) {
   const delta = getDelta(ant.direction);
 
   console.log('delta', delta);
@@ -34,11 +64,11 @@ function move(ant: AntModel, worldWidth: number, worldHeight: number) {
   const newX = ant.x + delta.x;
   const newY = ant.y + delta.y;
 
-  console.log({ newX, newY, worldWidth, worldHeight });
+  console.log({ newX, newY, world });
 
-  if (newX < 0 || newX >= worldWidth || newY < 0 || newY >= worldHeight) {
+  if (newX < 0 || newX >= world.width || newY < 0 || newY >= world.height) {
     // Hit an edge - need to turn.
-    return turn(ant);
+    return turn(ant, world);
   }
 
   // Check if hitting dirt or sand and, if so, dig.
@@ -55,26 +85,24 @@ function dig(ant: AntModel) {
   return ant;
 }
 
-function turn(ant: AntModel) {
-  // TODO: Do more than just turning around
+function turn(ant: AntModel, world: WorldModel) {
   console.log('turning');
 
-  if (ant.direction === 'right') {
-    return { ...ant, direction: 'left' as const };
+  const oppositeDirection = getOppositeDirection(ant.direction);
+  if (isLegalDirection(ant, oppositeDirection, world)){
+    return { ...ant, direction: oppositeDirection }
   }
 
-  if (ant.direction === 'left') {
-    return { ...ant, direction: 'right' as const };
-  }
+  // TODO: randomly turn another direction if it's not possible to turn around
 
   return ant;
 }
 
-function wander(ant: AntModel, worldWidth: number, worldHeight: number) {
+function wander(ant: AntModel, world: WorldModel) {
   console.log('wandering');
   // ant.timer = getTimer('wandering');
   const wanderingAnt = { ...ant, timer: getTimer('wandering') };
-  return move(wanderingAnt, worldWidth, worldHeight);
+  return move(wanderingAnt, world);
 }
 
 function drop(ant: AntModel) {
@@ -87,7 +115,7 @@ function carry(ant: AntModel) {
   return ant;
 }
 
-function moveAnts(ants: AntModel[], worldWidth: number, worldHeight: number) {
+function moveAnts(ants: AntModel[], world: WorldModel) {
   return ants.map(ant => {
     const movingAnt = { ...ant, timer: ant.timer - 1 };
 
@@ -112,15 +140,15 @@ function moveAnts(ants: AntModel[], worldWidth: number, worldHeight: number) {
         // } else if (turnRoll < config.probabilities.randomTurn) {
         //   turn(ant);
         // } else {
-        return wander(movingAnt, worldWidth, worldHeight);
+        return wander(movingAnt, world);
         // }
       case 'carrying':
         const dropRoll = Math.random() % 1000;
 
         if (dropRoll < config.probabilities.randomDrop) {
           return drop(movingAnt);
-        } 
-        
+        }
+
         return carry(movingAnt);
     }
 
@@ -128,15 +156,15 @@ function moveAnts(ants: AntModel[], worldWidth: number, worldHeight: number) {
   });
 }
 
-function World({ width, height }: Props) {
-  const dirtTotalHeight = height * config.initialDirtPercent;
-  const dirtChunkWidth = 4;
-  const dirtChunkHeight = 4;
+function World({ width, height, elementChunks }: Props) {
+  const [ants, setAnts] = useState(Array.from({ length: config.initialAntCount }, () => createAnt(Math.round(Math.random() * 1000) % width, 0, 'wandering')));
 
-  const [ants, setAnts] = useState(Array.from({ length: config.initialAntCount }, (_, antIndex) => createAnt(Math.random() * 1000 % width, 0, 'wandering')));
+  // TODO: consider calculating dirtTotalHeight like this?
+  // const dirtTotalHeight = elementChunks.filter(({ type, x }) => type === 'dirt' && x === 0).length;
+  const dirtTotalHeight = height * config.initialDirtPercent;
 
   useTick(() => {
-    setAnts(moveAnts(ants, width, height));
+    setAnts(moveAnts(ants, { width, height, elementChunks }));
   });
 
   return (
@@ -147,15 +175,7 @@ function World({ width, height }: Props) {
 
       <Container interactiveChildren={false}>
         { /* NOTE: It's probably wrong to code this like this - performance */}
-        {Array.from({ length: dirtTotalHeight / dirtChunkHeight }, (_, columnIndex) => {
-          return Array.from({ length: width / dirtChunkWidth }, (_, rowIndex) => {
-            return (<DirtChunk
-              width={dirtChunkWidth}
-              height={dirtChunkHeight}
-              x={rowIndex * dirtChunkWidth}
-              y={height - (columnIndex * dirtChunkHeight)} />);
-          });
-        })}
+        {elementChunks.map(elementChunkRow => elementChunkRow.map(elementChunk => <DirtChunk {...elementChunk} />))}
       </Container>
     </>
   );

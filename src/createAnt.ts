@@ -20,6 +20,8 @@ const BehaviorTimingFactors = {
 export const getTimer = (behavior: Behavior) => BehaviorTimingFactors[behavior] + Math.random() % 3 - 1;
 
 function createAnt(x = 0, y = 0, behavior = 'wandering' as const, direction = 'right' as const): Ant {
+  console.log('createAnt', { x, y });
+
   return {
     x,
     y,
