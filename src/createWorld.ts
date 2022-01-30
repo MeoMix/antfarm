@@ -4,29 +4,40 @@ export type ElementChunk = {
   type: Element;
   x: number;
   y: number;
-  width: number;
-  height: number;
+}
+
+export type FallingSand = {
+  x: number;
+  y: number;
+  isActive: boolean;
 }
 
 function createWorld(width: number, height: number, dirtPercent: number) {
   const dirtTotalHeight = height * dirtPercent;
+  const airTotalHeight = height - dirtTotalHeight;
 
-  const elementChunks = Array.from({ length: dirtTotalHeight }, (_, columnIndex) => {
+  const elementChunks = Array.from({ length: height }, (_, columnIndex) => {
     return Array.from({ length: width }, (_, rowIndex) => {
+      const type = columnIndex <= airTotalHeight ? 'air' : 'dirt';
+
       return {
-        type: 'dirt' as const,
+        type,
         x: rowIndex,
-        y: height - columnIndex,
-        width: 1,
-        height: 1,
+        y: columnIndex,
       } as ElementChunk
     });
   });
+
+  // TODO: idk, keeping this for now but feels like it should've been represented in elementChunks
+  const fallingSands = [] as FallingSand[];
 
   return {
     width,
     height,
     elementChunks,
+    fallingSands,
+    // TODO: probably shouldn't be on here?
+    maxFallingSandCount: 0,
   }
 }
 

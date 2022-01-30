@@ -5,12 +5,12 @@ const config = {
   gridSize: 4,
 
   probabilities: {
-    randomDig: 0.03, // dig down while wandering
-    randomDrop: 0.03, // drop while wandering
-    randomTurn: 0.05, // turn while wandering
-    concaveBelowDirtDig: 0.0100, // dig concave dirt below ground
-    convexAboveDirtDrop: 0.0100, // drop at convex corner above ground
-    sandExclusion: 0.050, // reduce chance to drop at undesirable sand/dirt edge
+    randomDig: 0.003, // dig down while wandering
+    randomDrop: 0.003, // drop while wandering
+    randomTurn: 0.005, // turn while wandering
+    concaveBelowDirtDig: 0.10, // dig concave dirt below ground
+    convexAboveDirtDrop: 0.10, // drop at convex corner above ground
+    sandExclusion: 0.05, // reduce chance to drop at undesirable sand/dirt edge
   },
 };
 

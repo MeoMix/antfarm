@@ -1,6 +1,6 @@
 import { Stage } from '@inlet/react-pixi';
 import './App.css';
-import World from './World';
+import World from './components/World';
 import createWorld from './createWorld';
 import config from './config';
 
@@ -21,8 +21,6 @@ function App() {
 
   // TODO: Careful, stageWidth/height needs to be divisible by gridSize for now
   const world = createWorld(900 / config.gridSize, 600 / config.gridSize, config.initialDirtPercent);
-
-  console.log('world', world);
 
   return (
     <div className="App">

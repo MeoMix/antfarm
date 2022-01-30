@@ -6,7 +6,8 @@ export type Ant = {
   x: number;
   y: number;
   behavior: Behavior;
-  direction: Direction;
+  facingDirection: Direction;
+  footDirection: Direction;
   timer: number;
   phase: number;
 }
@@ -19,12 +20,13 @@ const BehaviorTimingFactors = {
 
 export const getTimer = (behavior: Behavior) => BehaviorTimingFactors[behavior] + Math.random() % 3 - 1;
 
-function createAnt(x = 0, y = 0, behavior = 'wandering' as const, direction = 'right' as const): Ant {
+function createAnt(x = 0, y = 0, behavior = 'wandering' as const, facingDirection = 'east' as const, footDirection = 'south' as const): Ant {
   return {
     x,
     y,
     behavior,
-    direction,
+    facingDirection,
+    footDirection,
     timer: getTimer(behavior),
     phase: 0,
   };

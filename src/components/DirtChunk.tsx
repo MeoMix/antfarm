@@ -11,7 +11,7 @@ type Props = {
 function DirtChunk({ width, height, x, y }: Props) {
   return (
     <Sprite
-      x={x}
+      x={x} 
       y={y}
       width={width}
       height={height}
