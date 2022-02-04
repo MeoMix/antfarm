@@ -18,9 +18,9 @@ const BehaviorTimingFactors = {
   panic: 1,
 }
 
-export const getTimer = (behavior: Behavior) => BehaviorTimingFactors[behavior] + Math.random() % 3 - 1;
+export const getTimer = (behavior: Behavior) => BehaviorTimingFactors[behavior] + Math.floor((Math.random() * 3)) - 1;
 
-function createAnt(x = 0, y = 0, behavior = 'wandering' as const, facingDirection = 'east' as const, footDirection = 'south' as const): Ant {
+function createAnt(x = 0, y = 0, behavior = 'wandering' as const, facingDirection: Direction, footDirection: Direction): Ant {
   return {
     x,
     y,

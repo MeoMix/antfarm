@@ -1,10 +1,12 @@
 const config = {
   compactSandDepth: 15, // sand turns to dirt when stacked this high
-  initialDirtPercent: 2 / 3,
-  initialAntCount: 1,
-  gridSize: 4,
+  initialDirtPercent: 1 / 3,
+  initialAntCount: 100,
+  // TODO: why cant I set this to 12?
+  gridSize: 10,
 
   probabilities: {
+    // TODO: if I set this to 1 and ant digs while climbing edge it gets stuck indefinitely
     randomDig: 0.003, // dig down while wandering
     randomDrop: 0.003, // drop while wandering
     randomTurn: 0.005, // turn while wandering

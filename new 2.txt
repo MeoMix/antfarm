@@ -76,3 +76,10 @@ QUESTIONS:
 	- What is a timing factor?
 
 we have footdirs and backdirs and for some reason those are both important, but it's not clear to me why just yet.
+
+LEFT DOWN => ant is heading to the left and its feet are down on the ground
+LEFT UP => ant is heading to the left and its feet are up on the ceiling
+
+RIGHT DOWN => ant is heading to the right and its feet are down on the ground
+
+if I get the BACK_DIR of RIGHT DOWN then I get UP RIGHT which means that the ant is heading UP and its feet are to the RIGHT

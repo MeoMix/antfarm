@@ -20,7 +20,7 @@ function Ant({ x, y, facingDirection, footDirection }: Props) {
       x={x}
       y={y}
       image={antImage}
-      scale={[xFlip * 0.2, yFlip * 0.2]}
+      scale={[xFlip * 0.15, yFlip * 0.15]}
       angle={angle}
     />
   )
