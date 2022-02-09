@@ -36,8 +36,6 @@ function createWorld(width: number, height: number, dirtPercent: number) {
     height,
     elementChunks,
     fallingSands,
-    // TODO: probably shouldn't be on here?
-    maxFallingSandCount: 0,
   }
 }
 
