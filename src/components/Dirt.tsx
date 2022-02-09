@@ -8,7 +8,7 @@ type Props = {
   y: number;
 }
 
-function DirtChunk({ width, height, x, y }: Props) {
+function Dirt({ width, height, x, y }: Props) {
   return (
     <Sprite
       x={x} 
@@ -21,4 +21,4 @@ function DirtChunk({ width, height, x, y }: Props) {
   )
 }
 
-export default DirtChunk;
+export default Dirt;

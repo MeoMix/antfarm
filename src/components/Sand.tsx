@@ -8,7 +8,7 @@ type Props = {
   y: number;
 }
 
-function SandChunk({ width, height, x, y }: Props) {
+function Sand({ width, height, x, y }: Props) {
   return (
     <Sprite
       x={x}
@@ -21,4 +21,4 @@ function SandChunk({ width, height, x, y }: Props) {
   )
 }
 
-export default SandChunk;
+export default Sand;

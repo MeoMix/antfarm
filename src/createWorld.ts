@@ -1,32 +1,19 @@
-export type Element = {
-  type: 'dirt' | 'sand' | 'air';
-  x: number;
-  y: number;
-}
+export type Element = 'dirt' | 'sand' | 'air';
 
+// TODO: Feels weird that we have both "sand" as an element (and has an implicit x/y position)
+// but then we track "FallingSands" separately.
 export type FallingSand = {
   x: number;
   y: number;
+  // TODO: This isn't needed
   isActive: boolean;
 }
 
 function createWorld(width: number, height: number, dirtPercent: number) {
-  const dirtTotalHeight = height * dirtPercent;
-  const airTotalHeight = height - dirtTotalHeight;
-
-  const elements = Array.from({ length: height }, (_, columnIndex) => {
-    return Array.from({ length: width }, (_, rowIndex) => {
-      const type = columnIndex <= airTotalHeight ? 'air' : 'dirt';
-
-      return {
-        type,
-        x: rowIndex,
-        y: columnIndex,
-      } as Element
-    });
+  const elements = Array.from({ length: height }, (_, rowIndex) => {
+    return Array.from({ length: width }, () => rowIndex <= (height - (height * dirtPercent)) ? 'air' : 'dirt');
   });
 
-  // TODO: idk, keeping this for now but feels like it should've been represented in elements
   const fallingSands = [] as FallingSand[];
 
   return {

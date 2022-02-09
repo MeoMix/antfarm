@@ -18,7 +18,7 @@ function App() {
   return (
     <div className="App">
       <Stage width={stageWidth} height={stageHeight} options={{ backgroundColor: 0x87ceeb }}>
-        <World {...world} />
+        <World {...world} dirtPercent={config.initialDirtPercent} antCount={config.initialAntCount} gridSize={config.gridSize} />
       </Stage>
     </div>
   );
