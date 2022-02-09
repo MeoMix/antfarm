@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { Container, useTick } from '@inlet/react-pixi';
 import Ant from './Ant';
 import Dirt from './Dirt';
@@ -68,4 +68,4 @@ function World({ width, height, elements, fallingSands, antCount, dirtPercent, g
   );
 }
 
-export default World;
+export default memo(World);

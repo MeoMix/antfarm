@@ -1,5 +1,6 @@
 import { Sprite } from "@inlet/react-pixi";
 import { Texture } from "pixi.js";
+import { memo } from "react";
 
 type Props = {
   width: number;
@@ -21,4 +22,4 @@ function Sand({ width, height, x, y }: Props) {
   )
 }
 
-export default Sand;
+export default memo(Sand);

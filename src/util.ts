@@ -35,6 +35,7 @@ export const footFacingDirections = [
   { footDirection: 'west' as const, facingDirection: 'north' as const },
 ];
 
+// TODO: Probably more clear if expressed as rotate clockwise/counter-clockwise
 function getFootDirections(facingDirection: Direction, footDirection: Direction) {
   return {
     facingDirection: footDirection,
@@ -100,34 +101,6 @@ function isLegalDirection(ant: Ant, facingDirection: Direction, footDirection: D
   return true;
 }
 
-function loosenNeighbors(xc: number, yc: number, world: World) {
-  for (let y = yc + 2; y >= yc - 2; --y) {
-    for (let x = xc - 2; x <= xc + 2; ++x) {
-      if ((x !== xc || y !== yc) && x >= 0 && x < world.width && y >= 0 && y < world.height && world.elements[y][x] === 'sand') {
-        loosenOne(x, y, world);
-      }
-    }
-  }
-}
-
-function loosenOne(x: number, y: number, world: World) {
-  /* Check if there's already loose sand at this location. */
-  if (world.fallingSands.find(sand => sand.isActive && sand.x === x && sand.y === y)) {
-    return;
-  }
-
-  /* Try to store the new sand in an old position. */
-  const inactiveSand = world.fallingSands.find(({ isActive }) => !isActive);
-  if (inactiveSand) {
-    inactiveSand.x = x;
-    inactiveSand.y = y;
-    inactiveSand.isActive = true;
-  } else {
-    /* Add it. */
-    world.fallingSands.push({ x, y, isActive: true });
-  }
-}
-
 function move(ant: Ant, world: World) {
   const delta = getDelta(ant.facingDirection, ant.footDirection);
 
@@ -160,6 +133,8 @@ function move(ant: Ant, world: World) {
 
   const fx = newX + footDelta.x;
   const fy = newY + footDelta.y;
+
+  // TODO: bug here where ant in air doesn't respect gravity
   if (fx >= 0 && fx < world.width && fy >= 0 && fy < world.height && world.elements[fy][fx] === 'air') {
     /* Whoops, we're over air.  Move into the air and turn towards the feet.  But first, see if we should drop. */
     let updatedAnt = ant;
@@ -180,7 +155,6 @@ function dig(ant: Ant, isForcedForward: boolean, world: World) {
   const y = ant.y + delta.y;
 
   if (x >= 0 && x < world.width && y >= 0 && y < world.height && world.elements[y][x] !== 'air') {
-    // TODO: immutable world
     world.elements[y][x] = 'air';
     loosenNeighbors(x, y, world);
 
@@ -265,6 +239,34 @@ export function moveAnts(ants: Ant[], world: World) {
   });
 }
 
+function loosenNeighbors(xc: number, yc: number, world: World) {
+  for (let y = yc + 2; y >= yc - 2; --y) {
+    for (let x = xc - 2; x <= xc + 2; ++x) {
+      if ((x !== xc || y !== yc) && x >= 0 && x < world.width && y >= 0 && y < world.height && world.elements[y][x] === 'sand') {
+        loosenOne(x, y, world);
+      }
+    }
+  }
+}
+
+function loosenOne(x: number, y: number, world: World) {
+  /* Check if there's already loose sand at this location. */
+  if (world.fallingSands.find(sand => sand.isActive && sand.x === x && sand.y === y)) {
+    return;
+  }
+
+  /* Try to store the new sand in an old position. */
+  const inactiveSand = world.fallingSands.find(({ isActive }) => !isActive);
+  if (inactiveSand) {
+    inactiveSand.x = x;
+    inactiveSand.y = y;
+    inactiveSand.isActive = true;
+  } else {
+    /* Add it. */
+    world.fallingSands.push({ x, y, isActive: true });
+  }
+}
+
 export function sandFall(world: World) {
   // TODO: uhhh I don't think this array ever gets smaller?
   world.fallingSands.filter(({ isActive }) => isActive).forEach(fallingSand => {
@@ -306,6 +308,7 @@ export function sandFall(world: World) {
       fallingSand.y = y + 1;
       world.elements[y][x] = 'air';
       world.elements[fallingSand.y][fallingSand.x] = 'sand';
+      // TODO: This is mutating the fallingSands array as it's being iterated over which seems confusing and/or not implicitly understood
       loosenNeighbors(x, y, world);
       return;
     }
@@ -315,8 +318,8 @@ export function sandFall(world: World) {
 
     /* Compact sand into dirt. */
     let j = 0;
-    for (let k = 0; y + 1 < world.height && world.elements[y + 1][x] === 'sand'; ++y, ++k) {
-      j = k;
+    for (j = 0; y + 1 < world.height && world.elements[y + 1][x] === 'sand'; j++) {
+      y += 1;
     }
 
     if (j >= config.compactSandDepth) {

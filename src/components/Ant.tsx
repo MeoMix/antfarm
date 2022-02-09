@@ -1,4 +1,5 @@
 import { Sprite } from '@inlet/react-pixi';
+import { memo } from 'react';
 import antImage from '../ant.png';
 import type { Direction } from '../types';
 
@@ -26,4 +27,4 @@ function Ant({ x, y, facingDirection, footDirection }: Props) {
   )
 }
 
-export default Ant;
+export default memo(Ant);
