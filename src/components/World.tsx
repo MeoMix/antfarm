@@ -7,13 +7,13 @@ import createAnt, { getTimer } from '../createAnt';
 import type { Ant as AntModel } from '../createAnt';
 import type { Direction } from '../types';
 import { getOppositeDirection } from '../util';
-import type { ElementChunk as ElementChunkModel, FallingSand as FallingSandModel } from '../createWorld';
+import type { Element as ElementModel, FallingSand as FallingSandModel } from '../createWorld';
 import SandChunk from './SandChunk';
 
 type Props = {
   width: number;
   height: number;
-  elementChunks: ElementChunkModel[][];
+  elements: ElementModel[][];
   fallingSands: FallingSandModel[];
 }
 
@@ -21,7 +21,7 @@ type Props = {
 type WorldModel = {
   width: number;
   height: number;
-  elementChunks: ElementChunkModel[][];
+  elements: ElementModel[][];
   fallingSands: FallingSandModel[];
 }
 
@@ -87,7 +87,7 @@ function isLegalDirection(ant: AntModel, facingDirection: Direction, footDirecti
   const newY = ant.y + delta.y;
 
   // Check that there is air ahead
-  if (newX < 0 || newX >= world.width || newY < 0 || newY >= world.height || world.elementChunks[newY][newX].type !== 'air') {
+  if (newX < 0 || newX >= world.width || newY < 0 || newY >= world.height || world.elements[newY][newX].type !== 'air') {
     return false;
   }
 
@@ -97,7 +97,7 @@ function isLegalDirection(ant: AntModel, facingDirection: Direction, footDirecti
   const footNewY = ant.y + footDelta.y;
 
   // Check that there is solid footing
-  if (footNewX >= 0 && footNewX < world.width && footNewY >= 0 && footNewY < world.height && world.elementChunks[footNewY][footNewX].type === 'air') {
+  if (footNewX >= 0 && footNewX < world.width && footNewY >= 0 && footNewY < world.height && world.elements[footNewY][footNewX].type === 'air') {
     return false;
   }
 
@@ -107,7 +107,7 @@ function isLegalDirection(ant: AntModel, facingDirection: Direction, footDirecti
 function loosenNeighbors(xc: number, yc: number, world: WorldModel) {
   for (let y = yc + 2; y >= yc - 2; --y) {
     for (let x = xc - 2; x <= xc + 2; ++x) {
-      if ((x !== xc || y !== yc) && x >= 0 && x < world.width && y >= 0 && y < world.height && world.elementChunks[y][x].type === 'sand') {
+      if ((x !== xc || y !== yc) && x >= 0 && x < world.width && y >= 0 && y < world.height && world.elements[y][x].type === 'sand') {
         loosenOne(x, y, world);
       }
     }
@@ -126,11 +126,10 @@ function loosenOne(x: number, y: number, world: WorldModel) {
     inactiveSand.x = x;
     inactiveSand.y = y;
     inactiveSand.isActive = true;
-    return;
+  } else {
+    /* Add it. */
+    world.fallingSands.push({ x, y, isActive: true });
   }
-
-  /* Add it. */
-  world.fallingSands.push({ x, y, isActive: true });
 }
 
 function move(ant: AntModel, world: WorldModel) {
@@ -147,10 +146,10 @@ function move(ant: AntModel, world: WorldModel) {
   const surface = Math.floor(world.height * (1 - config.initialDirtPercent));
 
   // Check if hitting dirt or sand and, if so, dig.
-  if (world.elementChunks[newY][newX].type !== 'air') {
+  if (world.elements[newY][newX].type !== 'air') {
     /* Hit dirt or sand.  Dig? */
     // If ant is wandering *below ground level* and bumps into sand or has a chance to dig, dig.
-    if (ant.behavior === 'wandering' && ant.y >= surface && (world.elementChunks[newY][newX].type === 'sand' || Math.random() < config.probabilities.concaveBelowDirtDig)) {
+    if (ant.behavior === 'wandering' && ant.y >= surface && (world.elements[newY][newX].type === 'sand' || Math.random() < config.probabilities.concaveBelowDirtDig)) {
       /* Yes, try digging. */
       return dig(ant, true, world);
     } else {
@@ -165,7 +164,7 @@ function move(ant: AntModel, world: WorldModel) {
 
   const fx = newX + footDelta.x;
   const fy = newY + footDelta.y;
-  if (fx >= 0 && fx < world.width && fy >= 0 && fy < world.height && world.elementChunks[fy][fx].type === 'air') {
+  if (fx >= 0 && fx < world.width && fy >= 0 && fy < world.height && world.elements[fy][fx].type === 'air') {
     /* Whoops, we're over air.  Move into the air and turn towards the feet.  But first, see if we should drop. */
     let updatedAnt = ant;
     if (ant.behavior === 'carrying' && ant.y < surface && Math.random() < config.probabilities.convexAboveDirtDrop) {
@@ -184,9 +183,9 @@ function dig(ant: AntModel, isForcedForward: boolean, world: WorldModel) {
   const x = ant.x + delta.x;
   const y = ant.y + delta.y;
 
-  if (x >= 0 && x < world.width && y >= 0 && y < world.height && world.elementChunks[y][x].type !== 'air') {
+  if (x >= 0 && x < world.width && y >= 0 && y < world.height && world.elements[y][x].type !== 'air') {
     // TODO: immutable world
-    world.elementChunks[y][x].type = 'air';
+    world.elements[y][x].type = 'air';
     loosenNeighbors(x, y, world);
 
     return { ...ant, behavior: 'carrying' as const, timer: getTimer('carrying') };
@@ -216,7 +215,7 @@ function turn(ant: AntModel, world: WorldModel) {
 
   // No legal direction? Trapped! Drop sand and turn randomly in an attempt to dig out.
   let trappedAnt = ant;
-  if (ant.behavior === 'carrying' && (world.elementChunks[ant.y][ant.x].type === 'air' || Math.random() < config.probabilities.sandExclusion)) {
+  if (ant.behavior === 'carrying' && (world.elements[ant.y][ant.x].type === 'air' || Math.random() < config.probabilities.sandExclusion)) {
     trappedAnt = drop(ant, world);
   }
   const randomDirection = footFacingDirections[Math.floor(Math.random() * footFacingDirections.length)];
@@ -230,7 +229,7 @@ function wander(ant: AntModel, world: WorldModel) {
 }
 
 function drop(ant: AntModel, world: WorldModel) {
-  world.elementChunks[ant.y][ant.x].type = 'sand' as const;
+  world.elements[ant.y][ant.x].type = 'sand' as const;
   loosenOne(ant.x, ant.y, world);
 
   return { ...ant, behavior: 'wandering' as const, timer: getTimer('wandering') };
@@ -273,7 +272,7 @@ function moveAnts(ants: AntModel[], world: WorldModel) {
 function sandFall(world: WorldModel) {
   // TODO: uhhh I don't think this array ever gets smaller?
   world.fallingSands.filter(({ isActive }) => isActive).forEach(fallingSand => {
-    let x = fallingSand.x;
+    const x = fallingSand.x;
     let y = fallingSand.y;
     if (y + 1 >= world.height) {
       /* Hit bottom - done falling and no compaction possible. */
@@ -282,36 +281,37 @@ function sandFall(world: WorldModel) {
     }
 
     /* Drop the sand onto the next lower sand or dirt. */
-    if (world.elementChunks[y + 1][x].type === 'air') {
+    if (world.elements[y + 1][x].type === 'air') {
       fallingSand.y = y + 1;
-      world.elementChunks[y][x].type = 'air' as const;
-      world.elementChunks[fallingSand.y][fallingSand.x].type = 'sand' as const;
+      world.elements[y][x].type = 'air' as const;
+      world.elements[fallingSand.y][fallingSand.x].type = 'sand' as const;
       loosenNeighbors(x, y, world);
       return;
     }
 
     /* Tip over an edge? */
-    let tipl = (x - 1 >= 0 && y + 2 < world.height && world.elementChunks[y][x - 1].type === 'air' && world.elementChunks[y + 1][x - 1].type === 'air' && world.elementChunks[y + 2][x - 1].type === 'air');
-    let tipr = (x + 1 < world.width && y + 2 < world.height && world.elementChunks[y][x + 1].type === 'air' && world.elementChunks[y + 1][x + 1].type === 'air' && world.elementChunks[y + 2][x + 1].type === 'air');
+    let tipl = (x - 1 >= 0 && y + 2 < world.height && world.elements[y][x - 1].type === 'air' && world.elements[y + 1][x - 1].type === 'air' && world.elements[y + 2][x - 1].type === 'air');
+    let tipr = (x + 1 < world.width && y + 2 < world.height && world.elements[y][x + 1].type === 'air' && world.elements[y + 1][x + 1].type === 'air' && world.elements[y + 2][x + 1].type === 'air');
     if (tipl || tipr) {
       if (tipl && tipr) {
-        if (Math.floor(Math.random() * 2) === 0) {
+        if (Math.random() < 0.5) {
           tipl = false;
         } else {
           tipr = false;
         }
-
-        if (tipl) {
-          fallingSand.x = x - 1;
-        } else {
-          fallingSand.x = x + 1;
-          fallingSand.y = y + 1;
-          world.elementChunks[y][x].type = 'air';
-          world.elementChunks[fallingSand.y][fallingSand.x].type = 'sand';
-          loosenNeighbors(x, y, world);
-          return;
-        }
       }
+
+      if (tipl) {
+        fallingSand.x = x - 1;
+      } else {
+        fallingSand.x = x + 1;
+      }
+
+      fallingSand.y = y + 1;
+      world.elements[y][x].type = 'air';
+      world.elements[fallingSand.y][fallingSand.x].type = 'sand';
+      loosenNeighbors(x, y, world);
+      return;
     }
 
     /* Found the final resting place. */
@@ -319,17 +319,17 @@ function sandFall(world: WorldModel) {
 
     /* Compact sand into dirt. */
     let j = 0;
-    for (let k = 0; y + 1 < world.height && world.elementChunks[y + 1][x].type === 'sand'; ++y, ++k) {
+    for (let k = 0; y + 1 < world.height && world.elements[y + 1][x].type === 'sand'; ++y, ++k) {
       j = k;
     }
 
     if (j >= config.compactSandDepth) {
-      world.elementChunks[y][x].type = 'dirt';
+      world.elements[y][x].type = 'dirt';
     }
   });
 }
 
-function World({ width, height, elementChunks, fallingSands }: Props) {
+function World({ width, height, elements, fallingSands }: Props) {
   const [ants, setAnts] = useState(() => {
     return Array.from({ length: config.initialAntCount }, () => {
       // Put the ant at a random location along the x-axis that fits within the bounds of the world.
@@ -346,7 +346,7 @@ function World({ width, height, elementChunks, fallingSands }: Props) {
 
   // TODO: This doesn't seem like the right approach because it uses RAF which means the simulation stops when inactive.
   useTick(() => {
-    const world = { width, height, elementChunks, fallingSands };
+    const world = { width, height, elements, fallingSands };
     setAnts(moveAnts(ants, world));
     sandFall(world);
   });
@@ -368,7 +368,7 @@ function World({ width, height, elementChunks, fallingSands }: Props) {
 
       <Container interactiveChildren={false}>
         { /* NOTE: It's probably wrong to code this like this - performance */}
-        {elementChunks.map((elementChunkRow, rowIndex) => elementChunkRow.map(({ type }, columnIndex) => {
+        {elements.map((elementRow, rowIndex) => elementRow.map(({ type }, columnIndex) => {
           switch (type) {
             case 'dirt':
               return (
@@ -391,7 +391,7 @@ function World({ width, height, elementChunks, fallingSands }: Props) {
             case 'air':
               break;
             default:
-              throw new Error(`Unexpected elementChunk type: ${type}`);
+              throw new Error(`Unexpected element type: ${type}`);
           }
         }))}
       </Container>
