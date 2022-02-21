@@ -7,7 +7,7 @@ import config from './config';
 import createAnt from './createAnt';
 import { footFacingDirections, moveAnts, sandFall } from './util';
 
-const TICK_MS = 100;
+const TICK_MS = 50;
 
 function App() {
   useEffect(() => {
