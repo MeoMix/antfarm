@@ -112,7 +112,9 @@ function move(ant: Ant, world: World) {
     return turn(ant, world);
   }
 
-  const surface = Math.floor(world.height * (1 - config.initialDirtPercent));
+  // TODO: pretty sure we want +1 here so ants stop picking sand off the surface (and only move it when under surface)
+  // but app throws if +1'ed
+  const surface = Math.floor(world.height * (1 - config.initialDirtPercent)) + 1;
 
   // Check if hitting dirt or sand and, if so, dig.
   if (world.elements[newY][newX] !== 'air') {
@@ -249,7 +251,7 @@ function loosenNeighbors(xc: number, yc: number, world: World) {
   }
 }
 
-function loosenOne(x: number, y: number, world: World) {
+ function loosenOne(x: number, y: number, world: World) {
   /* Check if there's already loose sand at this location. */
   if (world.fallingSands.find(sand => sand.isActive && sand.x === x && sand.y === y)) {
     return;

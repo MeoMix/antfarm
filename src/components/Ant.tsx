@@ -2,6 +2,7 @@ import { Sprite } from '@inlet/react-pixi';
 import { memo } from 'react';
 import antImage from '../ant.png';
 import type { Direction } from '../types';
+import config from '../config';
 
 type Props = {
   x: number;
@@ -17,11 +18,14 @@ function Ant({ x, y, facingDirection, footDirection }: Props) {
 
   return (
     <Sprite
-      anchor={[0.5, 1]}
+      /* mirror properly - flipping over an anchor of 0,0 will shift ant position when desired result is to flip over center */
+      anchor={[xFlip === -1 ? 1 : 0, yFlip === -1 ? 1 : 0]}
       x={x}
       y={y}
       image={antImage}
-      scale={[xFlip * 0.15, yFlip * 0.15]}
+      // terrible. scaling img down to fit into 1x1 grid cell so that alignment is ez.
+      // ants need to be able to take up multiple grid squares soon but need to wrap my head around it.
+      scale={[xFlip * (config.gridSize / 184), yFlip * (config.gridSize / 154)]}
       angle={angle}
     />
   )
