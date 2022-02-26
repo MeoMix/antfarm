@@ -5,8 +5,6 @@ export type Element = 'dirt' | 'sand' | 'air';
 export type FallingSand = {
   x: number;
   y: number;
-  // TODO: This isn't needed
-  isActive: boolean;
 }
 
 function createWorld(width: number, height: number, dirtPercent: number) {

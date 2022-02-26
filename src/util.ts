@@ -253,30 +253,20 @@ function loosenNeighbors(xc: number, yc: number, world: World) {
 
  function loosenOne(x: number, y: number, world: World) {
   /* Check if there's already loose sand at this location. */
-  if (world.fallingSands.find(sand => sand.isActive && sand.x === x && sand.y === y)) {
+  if (world.fallingSands.find(sand => sand.x === x && sand.y === y)) {
     return;
   }
 
-  /* Try to store the new sand in an old position. */
-  const inactiveSand = world.fallingSands.find(({ isActive }) => !isActive);
-  if (inactiveSand) {
-    inactiveSand.x = x;
-    inactiveSand.y = y;
-    inactiveSand.isActive = true;
-  } else {
-    /* Add it. */
-    world.fallingSands.push({ x, y, isActive: true });
-  }
+  world.fallingSands.push({ x, y });
 }
 
 export function sandFall(world: World) {
-  // TODO: uhhh I don't think this array ever gets smaller?
-  world.fallingSands.filter(({ isActive }) => isActive).forEach(fallingSand => {
+  [...world.fallingSands].forEach((fallingSand, index) => {
     const x = fallingSand.x;
     let y = fallingSand.y;
     if (y + 1 >= world.height) {
       /* Hit bottom - done falling and no compaction possible. */
-      fallingSand.isActive = false;
+      world.fallingSands.splice(index, 1);
       return;
     }
 
@@ -316,7 +306,7 @@ export function sandFall(world: World) {
     }
 
     /* Found the final resting place. */
-    fallingSand.isActive = false;
+    world.fallingSands.splice(index, 1);
 
     /* Compact sand into dirt. */
     let j = 0;
