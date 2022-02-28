@@ -218,13 +218,30 @@ export function moveAnts(ants: Ant[], world: World) {
     if (movingAnt.timer > 0) {
       return movingAnt;
     }
+    
+    /* Gravity check. */
+    const footDirections = getFootDirections(movingAnt.facingDirection, movingAnt.footDirection);
+    const footDelta = getDelta(footDirections.facingDirection, footDirections.footDirection);
+    const fx = movingAnt.x + footDelta.x;
+    const fy = movingAnt.y + footDelta.y;
 
+    if (fx >= 0 && fx < world.width && fy >= 0 && fy < world.height && world.elements[fy][fx] === 'air') {
+      /* Whoops, whatever we were walking on disappeared. */
+      if (movingAnt.y + 1 < world.height && world.elements[movingAnt.y + 1][movingAnt.x] === 'air') {
+        return { ...movingAnt, y: movingAnt.y + 1};
+      } else {
+        /* Can't fall?  Try turning. */
+        return turn(movingAnt, world);
+      }
+    }
+
+		/* Ok, the ant gets to do something. */
     switch (movingAnt.behavior) {
       case 'wandering':
         if (Math.random() < config.probabilities.randomDig) {
-          return dig(ant, false, world);
+          return dig(movingAnt, false, world);
         } else if (Math.random() < config.probabilities.randomTurn) {
-          return turn(ant, world);
+          return turn(movingAnt, world);
         } else {
           return wander(movingAnt, world);
         }

@@ -83,7 +83,14 @@ function App() {
 
   return (
     <div className="App">
-      <Stage width={world.width * config.gridSize} height={world.height * config.gridSize} options={{ backgroundColor: 0x87ceeb }}>
+      <Stage
+        width={world.width * config.gridSize}
+        height={world.height * config.gridSize}
+        options={{
+          backgroundColor: 0x87ceeb,
+          resolution: window.devicePixelRatio,
+        }}
+      >
         <World elements={world.elements} ants={ants} gridSize={config.gridSize} />
       </Stage>
     </div>
