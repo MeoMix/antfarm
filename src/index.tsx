@@ -17,12 +17,21 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
-ReactDOM.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-  document.getElementById('root')
-);
+// TODO: idk if this is good practice or not. docs keep implying it is, but it seems awkward to preload resources
+// surely browser handles this just fine
+import { Loader } from 'pixi.js';
+import antImage from './ant.png';
+
+Loader.shared.add('Ant', antImage, () => {
+  ReactDOM.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+    document.getElementById('root')
+  );
+});
+Loader.shared.load();
+
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
