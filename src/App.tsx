@@ -87,7 +87,7 @@ function App() {
         width={world.width * config.gridSize}
         height={world.height * config.gridSize}
         options={{
-          backgroundColor: 0x87ceeb,
+          backgroundColor: 0x5f4a2a,
           resolution: window.devicePixelRatio,
         }}
       >

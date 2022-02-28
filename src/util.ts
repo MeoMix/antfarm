@@ -113,13 +113,13 @@ function move(ant: Ant, world: World) {
   }
 
   // +1 here so ants stop picking sand off the surface
-  const surface = Math.floor(world.height * (1 - config.initialDirtPercent)) + 1;
+  const subSurface = Math.floor(world.height * (1 - config.initialDirtPercent)) + 1;
 
   // Check if hitting dirt or sand and, if so, dig.
   if (world.elements[newY][newX] !== 'air') {
     /* Hit dirt or sand.  Dig? */
     // If ant is wandering *below ground level* and bumps into sand or has a chance to dig, dig.
-    if (ant.behavior === 'wandering' && ant.y >= surface && (world.elements[newY][newX] === 'sand' || Math.random() < config.probabilities.concaveBelowDirtDig)) {
+    if (ant.behavior === 'wandering' && ant.y >= subSurface && (world.elements[newY][newX] === 'sand' || Math.random() < config.probabilities.concaveBelowDirtDig)) {
       /* Yes, try digging. */
       return dig(ant, true, world);
     } else {
@@ -139,7 +139,7 @@ function move(ant: Ant, world: World) {
   if (fx >= 0 && fx < world.width && fy >= 0 && fy < world.height && world.elements[fy][fx] === 'air') {
     /* Whoops, we're over air.  Move into the air and turn towards the feet.  But first, see if we should drop. */
     let updatedAnt = ant;
-    if (ant.behavior === 'carrying' && ant.y < surface && Math.random() < config.probabilities.convexAboveDirtDrop) {
+    if (ant.behavior === 'carrying' && ant.y < subSurface && Math.random() < config.probabilities.convexAboveDirtDrop) {
       updatedAnt = drop(ant, world);
     }
     return { ...updatedAnt, x: fx, y: fy, facingDirection: footDirections.facingDirection, footDirection: footDirections.footDirection };
