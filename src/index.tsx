@@ -1,7 +1,6 @@
 /*
 **
 ** Copyright (C) 1991 by Jef Poskanzer
-**               2022 by Sean Anderson
 **
 ** Permission to use, copy, modify, and distribute this software and its
 ** documentation for any purpose and without fee is hereby granted, provided
@@ -10,6 +9,7 @@
 ** documentation.  This software is provided "as is" without express or
 ** implied warranty.
 */
+// Original '91 source code ported to React (badly) by Sean Anderson in '22!
 
 import React from 'react';
 import ReactDOM from 'react-dom';

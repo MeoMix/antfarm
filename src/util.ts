@@ -135,7 +135,6 @@ function move(ant: Ant, world: World) {
   const fx = newX + footDelta.x;
   const fy = newY + footDelta.y;
 
-  // TODO: bug here where ant in air doesn't respect gravity
   if (fx >= 0 && fx < world.width && fy >= 0 && fy < world.height && world.elements[fy][fx] === 'air') {
     /* Whoops, we're over air.  Move into the air and turn towards the feet.  But first, see if we should drop. */
     let updatedAnt = ant;
@@ -276,13 +275,17 @@ function loosenNeighbors(xc: number, yc: number, world: World) {
   world.fallingSands.push({ x, y });
 }
 
+// TOOD: IDK how I feel about it, but in a very crowded ant world ants can fall *with* the sand that's falling.
+// It's actually pretty great, but I feel kind of bad for the ants and it seems unintentional.
 export function sandFall(world: World) {
-  [...world.fallingSands].forEach((fallingSand, index) => {
+  const fallenSandIndices = [] as number[];
+
+  world.fallingSands.forEach((fallingSand, index) => {
     const x = fallingSand.x;
     let y = fallingSand.y;
     if (y + 1 >= world.height) {
       /* Hit bottom - done falling and no compaction possible. */
-      world.fallingSands.splice(index, 1);
+      fallenSandIndices.push(index);
       return;
     }
 
@@ -322,7 +325,7 @@ export function sandFall(world: World) {
     }
 
     /* Found the final resting place. */
-    world.fallingSands.splice(index, 1);
+    fallenSandIndices.push(index);
 
     /* Compact sand into dirt. */
     let j = 0;
@@ -334,4 +337,14 @@ export function sandFall(world: World) {
       world.elements[y][x] = 'dirt';
     }
   });
+
+  // TODO: be less dumb in how I write code.
+  // want to rewrite the forEach loop above to not mutate worlds
+  // as an interim, I need to not mutate fallingSands length while performing the loop, so store the indices for later
+  // ... but then since they're indices, need to reverse it so that I don't affect the array
+  // clearly I could reverse fallingSands originally and process falling sand against the flow of gravity, but I made x/y
+  // axis implicit in the 2d array which makes it less desirable to reverse.
+  fallenSandIndices.reverse().forEach(index => {
+    world.fallingSands.splice(index, 1);
+  })
 }
