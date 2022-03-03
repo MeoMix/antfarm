@@ -2,14 +2,7 @@ import type { Direction } from './types';
 import type { Ant } from './createAnt';
 import config from './config';
 import { getTimer } from './createAnt';
-import type { Element } from './createWorld';
-
-// TODO: intentionally keeping this separate from props until I can think more about architecture, don't want to unreasonably couple model to props
-type World = {
-  width: number;
-  height: number;
-  elements: Element[][];
-}
+import type { World, Element } from './createWorld';
 
 export function getOppositeDirection(direction: Direction) {
   switch (direction) {
@@ -77,7 +70,7 @@ function getDelta(facingDirection: Direction, footDirection: Direction) {
   throw new Error('unsupported');
 }
 
-function isLegalDirection(ant: Ant, facingDirection: Direction, footDirection: Direction, world: World) {
+function isLegalDirection(ant: Readonly<Ant>, facingDirection: Direction, footDirection: Direction, world: World) {
   const delta = getDelta(facingDirection, footDirection);
   const newX = ant.x + delta.x;
   const newY = ant.y + delta.y;
@@ -100,7 +93,7 @@ function isLegalDirection(ant: Ant, facingDirection: Direction, footDirection: D
   return true;
 }
 
-function move(ant: Ant, world: World) {
+function move(ant: Readonly<Ant>, world: World) {
   const delta = getDelta(ant.facingDirection, ant.footDirection);
 
   const newX = ant.x + delta.x;
@@ -146,7 +139,7 @@ function move(ant: Ant, world: World) {
   return { ...ant, x: newX, y: newY };
 }
 
-function dig(ant: Ant, isForcedForward: boolean, world: World) {
+function dig(ant: Readonly<Ant>, isForcedForward: boolean, world: World) {
   const { facingDirection, footDirection } = isForcedForward ? ant : getFootDirections(ant.facingDirection, ant.footDirection);
   const delta = getDelta(facingDirection, footDirection); 
 
@@ -162,7 +155,7 @@ function dig(ant: Ant, isForcedForward: boolean, world: World) {
   return ant;
 }
 
-function turn(ant: Ant, world: World) {
+function turn(ant: Readonly<Ant>, world: World) {
   // First try turning perpendicularly towards the ant's back. If that fails, try turning around.
   const backDirections1 = getBackDirections(ant.facingDirection, ant.footDirection);
   if (isLegalDirection(ant, backDirections1.facingDirection, backDirections1.footDirection, world)){
@@ -191,23 +184,23 @@ function turn(ant: Ant, world: World) {
   return { ...trappedAnt, facingDirection: randomDirection.facingDirection, footDirection: randomDirection.footDirection }
 }
 
-function wander(ant: Ant, world: World) {
+function wander(ant: Readonly<Ant>, world: World) {
   const wanderingAnt = { ...ant, behavior: 'wandering' as const, timer: getTimer('wandering') };
   return move(wanderingAnt, world);
 }
 
-function drop(ant: Ant, world: World) {
+function drop(ant: Readonly<Ant>, world: World) {
   world.elements[ant.y][ant.x] = 'sand' as const;
 
   return { ...ant, behavior: 'wandering' as const, timer: getTimer('wandering') };
 }
 
-function carry(ant: Ant, world: World) {
+function carry(ant: Readonly<Ant>, world: World) {
   const carryingAnt = { ...ant, behavior: 'carrying' as const, timer: getTimer('carrying') };
   return move(carryingAnt, world);
 }
 
-export function moveAnts(ants: Ant[], world: World) {
+export function moveAnts(ants: Readonly<Ant[]>, world: World) {
   return ants.map(ant => {
     const movingAnt = { ...ant, timer: ant.timer - 1 };
 
@@ -268,11 +261,9 @@ function getSandDepth(x: number, y: number, world: World) {
 export function sandFall(world: World) {
   const elements = JSON.parse(JSON.stringify(world.elements)) as Element[][];
 
-  world.elements.forEach((elementRow, rowIndex) => elementRow.forEach((element, columnIndex) => {
+  world.elements.forEach((elementRow, y) => elementRow.forEach((element, x) => {
     if (element !== 'sand') return;
 
-    const x = columnIndex;
-    const y = rowIndex;
     if (y + 1 >= world.height) {
       /* Hit bottom - done falling and no compaction possible. */
       return;
@@ -297,10 +288,8 @@ export function sandFall(world: World) {
         }
       }
 
-      const tippedX = tipLeft ? x - 1 : x + 1;
-
       elements[y][x] = 'air';
-      elements[y + 1][tippedX] = 'sand';
+      elements[y + 1][tipLeft ? x - 1 : x + 1] = 'sand';
       return;
     }
 
