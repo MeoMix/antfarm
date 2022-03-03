@@ -275,6 +275,16 @@ function loosenNeighbors(xc: number, yc: number, world: World) {
   world.fallingSands.push({ x, y });
 }
 
+function getSandDepth(x: number, y: number, world: World) {
+  let sandDepth = 0;
+
+  while (sandDepth + y < world.height && world.elements[sandDepth + y][x] === 'sand') {
+    sandDepth += 1;
+  }
+
+  return sandDepth;
+}
+
 // TOOD: IDK how I feel about it, but in a very crowded ant world ants can fall *with* the sand that's falling.
 // It's actually pretty great, but I feel kind of bad for the ants and it seems unintentional.
 export function sandFall(world: World) {
@@ -282,7 +292,7 @@ export function sandFall(world: World) {
 
   world.fallingSands.forEach((fallingSand, index) => {
     const x = fallingSand.x;
-    let y = fallingSand.y;
+    const y = fallingSand.y;
     if (y + 1 >= world.height) {
       /* Hit bottom - done falling and no compaction possible. */
       fallenSandIndices.push(index);
@@ -328,13 +338,9 @@ export function sandFall(world: World) {
     fallenSandIndices.push(index);
 
     /* Compact sand into dirt. */
-    let j = 0;
-    for (j = 0; y + 1 < world.height && world.elements[y + 1][x] === 'sand'; j++) {
-      y += 1;
-    }
-
-    if (j >= config.compactSandDepth) {
-      world.elements[y][x] = 'dirt';
+    const sandDepth = getSandDepth(x, y + 1, world);
+    if (sandDepth >= config.compactSandDepth) {
+      world.elements[y + sandDepth][x] = 'dirt';
     }
   });
 
