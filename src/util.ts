@@ -2,7 +2,7 @@ import type { Direction } from './types';
 import type { Ant } from './createAnt';
 import config from './config';
 import { getTimer } from './createAnt';
-import type { World, Element } from './createWorld';
+import type { World  } from './createWorld';
 
 export function getOppositeDirection(direction: Direction) {
   switch (direction) {
@@ -145,6 +145,7 @@ function dig(ant: Readonly<Ant>, isForcedForward: boolean, world: World) {
 
   if (x >= 0 && x < world.width && y >= 0 && y < world.height && world.elements[y][x] !== 'air') {
     world.elements[y][x] = 'air';
+    loosenNeighbors(x, y, world);
 
     return { ...ant, behavior: 'carrying' as const, timer: getTimer('carrying') };
   }
@@ -188,6 +189,7 @@ function wander(ant: Readonly<Ant>, world: World) {
 
 function drop(ant: Readonly<Ant>, world: World) {
   world.elements[ant.y][ant.x] = 'sand' as const;
+  loosenOne(ant.x, ant.y, world);
 
   return { ...ant, behavior: 'wandering' as const, timer: getTimer('wandering') };
 }
@@ -243,6 +245,25 @@ export function moveAnts(ants: Readonly<Ant[]>, world: World) {
   });
 }
 
+function loosenNeighbors(xc: number, yc: number, world: World) {
+  for (let y = yc + 2; y >= yc - 2; --y) {
+    for (let x = xc - 2; x <= xc + 2; ++x) {
+      if ((x !== xc || y !== yc) && x >= 0 && x < world.width && y >= 0 && y < world.height && world.elements[y][x] === 'sand') {
+        loosenOne(x, y, world);
+      }
+    }
+  }
+}
+
+ function loosenOne(x: number, y: number, world: World) {
+  /* Check if there's already loose sand at this location. */
+  if (world.fallingSands.find(sand => sand.x === x && sand.y === y)) {
+    return;
+  }
+
+  world.fallingSands.push({ x, y });
+}
+
 function getSandDepth(x: number, y: number, world: World) {
   let sandDepth = 0;
 
@@ -256,26 +277,29 @@ function getSandDepth(x: number, y: number, world: World) {
 // TOOD: IDK how I feel about it, but in a very crowded ant world ants can fall *with* the sand that's falling.
 // It's actually pretty great, but I feel kind of bad for the ants and it seems unintentional.
 export function sandFall(world: World) {
-  const elements = JSON.parse(JSON.stringify(world.elements)) as Element[][];
+  const fallenSandIndices = [] as number[];
 
-  world.elements.forEach((elementRow, y) => elementRow.forEach((element, x) => {
-    if (element !== 'sand') return;
-
+  world.fallingSands.forEach((fallingSand, index) => {
+    const x = fallingSand.x;
+    const y = fallingSand.y;
     if (y + 1 >= world.height) {
       /* Hit bottom - done falling and no compaction possible. */
+      fallenSandIndices.push(index);
       return;
     }
 
     /* Drop the sand onto the next lower sand or dirt. */
-    if (elements[y + 1][x] === 'air') {
-      elements[y][x] = 'air' as const;
-      elements[y + 1][x] = 'sand' as const;
+    if (world.elements[y + 1][x] === 'air') {
+      fallingSand.y = y + 1;
+      world.elements[y][x] = 'air' as const;
+      world.elements[fallingSand.y][fallingSand.x] = 'sand' as const;
+      loosenNeighbors(x, y, world);
       return;
     }
 
     /* Tip over an edge? */
-    let tipLeft = (x - 1 >= 0 && y + 2 < world.height && elements[y][x - 1] === 'air' && elements[y + 1][x - 1] === 'air' && elements[y + 2][x - 1] === 'air');
-    let tipRight = (x + 1 < world.width && y + 2 < world.height && elements[y][x + 1] === 'air' && elements[y + 1][x + 1] === 'air' && elements[y + 2][x + 1] === 'air');
+    let tipLeft = (x - 1 >= 0 && y + 2 < world.height && world.elements[y][x - 1] === 'air' && world.elements[y + 1][x - 1] === 'air' && world.elements[y + 2][x - 1] === 'air');
+    let tipRight = (x + 1 < world.width && y + 2 < world.height && world.elements[y][x + 1] === 'air' && world.elements[y + 1][x + 1] === 'air' && world.elements[y + 2][x + 1] === 'air');
     if (tipLeft || tipRight) {
       if (tipLeft && tipRight) {
         if (Math.random() < 0.5) {
@@ -285,17 +309,27 @@ export function sandFall(world: World) {
         }
       }
 
-      elements[y][x] = 'air';
-      elements[y + 1][tipLeft ? x - 1 : x + 1] = 'sand';
+      fallingSand.x = tipLeft ? x - 1 : x + 1;
+      fallingSand.y = y + 1;
+      world.elements[y][x] = 'air';
+      world.elements[fallingSand.y][fallingSand.x] = 'sand';
+      // TODO: This is mutating the fallingSands array as it's being iterated over which seems confusing and/or not implicitly understood
+      loosenNeighbors(x, y, world);
       return;
     }
+
+    /* Found the final resting place. */
+    fallenSandIndices.push(index);
 
     /* Compact sand into dirt. */
     const sandDepth = getSandDepth(x, y + 1, world);
     if (sandDepth >= config.compactSandDepth) {
-      elements[y + sandDepth][x] = 'dirt';
+      world.elements[y + sandDepth][x] = 'dirt';
     }
-  }));
+  });
 
-  world.elements = elements;
+  // reverse because index position is important and am removing from array which affects indices.
+  fallenSandIndices.reverse().forEach(index => {
+    world.fallingSands.splice(index, 1);
+  })
 }
