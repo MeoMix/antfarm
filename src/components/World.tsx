@@ -1,9 +1,9 @@
 import { memo } from 'react';
-import { Container } from '@inlet/react-pixi';
 import Ant from './Ant';
 import Dirt from './Dirt';
 import Sand from './Sand';
 import Air from './Air';
+import Tunnel from './Tunnel';
 import type createAnt from '../createAnt';
 import type { Element } from '../createWorld';
 
@@ -16,7 +16,11 @@ type Props = {
 
 function World({ elements, ants, gridSize, surfaceLevel }: Props) {
   return (
-    <Container interactiveChildren={false}>
+    <>
+      { /* Air/Tunnel are non-interactive and so can be rendered with a single sprite. Dirt/Sand are interactive and so need to be rendered in grid chunks. */ }
+      <Air x={0} y={0} width={elements[0].length * gridSize} height={(surfaceLevel + 1) * gridSize} />
+      <Tunnel x={0} y={(surfaceLevel + 1) * gridSize} width={elements[0].length * gridSize} height={(elements.length - (surfaceLevel + 1)) * gridSize} />
+
       {
         elements.map((elementRow, rowIndex) => elementRow.map((element, columnIndex) => {
           const elementProps = { x: columnIndex * gridSize, y: rowIndex * gridSize, width: gridSize, height: gridSize };
@@ -29,12 +33,6 @@ function World({ elements, ants, gridSize, surfaceLevel }: Props) {
             return <Sand {...elementProps} />;
           }
 
-          // TODO: Don't draw air as grid squares, leverage two backgrounds - one for air and one for subsurface dirt
-          if (element === 'air' && rowIndex <= surfaceLevel) {
-            return <Air {...elementProps} />
-          }
-
-          // This will show brown since that's the background color of the world
           return null;
         }))
       }
@@ -50,8 +48,7 @@ function World({ elements, ants, gridSize, surfaceLevel }: Props) {
           />
         ))
       }
-
-    </Container>
+    </>
   );
 }
 

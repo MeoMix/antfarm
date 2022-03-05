@@ -12,6 +12,7 @@ type Props = {
 function Dirt({ width, height, x, y }: Props) {
   return (
     <Sprite
+      interactiveChildren={false}
       x={x} 
       y={y}
       width={width}

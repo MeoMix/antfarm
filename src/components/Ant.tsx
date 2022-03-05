@@ -19,6 +19,7 @@ function Ant({ x, y, width, facingDirection, footDirection }: Props) {
 
   return (
     <Sprite
+      interactiveChildren={false}
       image={image}
       // move pivot to center so changes to angle/scale maintain consistent centering 
       pivot={{ x: width / 2, y: width / 2 }}

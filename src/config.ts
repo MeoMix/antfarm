@@ -1,7 +1,7 @@
 const config = {
   compactSandDepth: 15, // sand turns to dirt when stacked this high
   initialDirtPercent: 2 / 3,
-  initialAntCount: 20,
+  initialAntCount: 200,
 
   probabilities: {
     // TODO: if I set this to 1 and ant digs while climbing edge it gets stuck indefinitely

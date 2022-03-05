@@ -7,9 +7,9 @@ import config from './config';
 import createAnt from './createAnt';
 import { footFacingDirections, moveAnts, sandFall } from './util';
 
-const TICK_MS = 50;
-const WORLD_WIDTH = 90;
-const WORLD_HEIGHT = 60;
+const TICK_MS = 10;
+const WORLD_WIDTH = 180;
+const WORLD_HEIGHT = 120;
 
 // Figure out the width/height of the browser, get the smaller value, determine max stage size that fits in that dimension.
 function getScale() {
@@ -31,6 +31,7 @@ function App() {
     };
   }, []);
 
+  // TODO: This is written incorrectly, it doesn't respond to world/ants changing.
   useEffect(() => {
     let lastVisibleTimeMs = 0;
 
@@ -52,10 +53,10 @@ function App() {
       }
     }
 
-    document.addEventListener('visibilitychange', handleVisibilityChange, false);
+    document.addEventListener('visibilitychange', handleVisibilityChange, true);
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange, false);
+      document.removeEventListener('visibilitychange', handleVisibilityChange, true);
     }
   }, []);
 
@@ -72,6 +73,8 @@ function App() {
 
       const groundLevelDirections = footFacingDirections.filter(({ footDirection }) => footDirection === 'south');
       const randomDirection = groundLevelDirections[Math.floor(Math.random() * groundLevelDirections.length)];
+
+      console.log('create ants running');
   
       return createAnt(x, y, 'wandering', randomDirection.facingDirection, randomDirection.footDirection);
     });
@@ -107,7 +110,6 @@ function App() {
         width={world.width * scale}
         height={world.height * scale}
         options={{
-          backgroundColor: 0x5f4a2a,
           resolution: window.devicePixelRatio,
         }}
       >

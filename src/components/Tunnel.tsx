@@ -9,18 +9,18 @@ type Props = {
   y: number;
 }
 
-function Air({ width, height, x, y }: Props) {
+function Tunnel({ width, height, x, y }: Props) {
   return (
     <Sprite
       interactiveChildren={false}
-      x={x}
+      x={x} 
       y={y}
       width={width}
       height={height}
       texture={Texture.WHITE}
-      tint={0x87ceeb}
+      tint={0x5f4a2a}
     />
   )
 }
 
-export default memo(Air);
+export default memo(Tunnel);
