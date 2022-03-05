@@ -1,15 +1,14 @@
 import './App.css';
 import { useEffect, useState } from 'react';
+import { Stage } from '@inlet/react-pixi';
 import World from './components/World';
 import createWorld from './createWorld';
-import { Stage } from '@inlet/react-pixi';
 import config from './config';
-import createAnt from './createAnt';
-import { footFacingDirections, moveAnts, sandFall } from './util';
+import { moveAnts, sandFall } from './util';
 
-const TICK_MS = 10;
-const WORLD_WIDTH = 180;
-const WORLD_HEIGHT = 120;
+const TICK_MS = 50;
+const WORLD_WIDTH = 90;
+const WORLD_HEIGHT = 60;
 
 // Figure out the width/height of the browser, get the smaller value, determine max stage size that fits in that dimension.
 function getScale() {
@@ -31,7 +30,6 @@ function App() {
     };
   }, []);
 
-  // TODO: This is written incorrectly, it doesn't respond to world/ants changing.
   useEffect(() => {
     let lastVisibleTimeMs = 0;
 
@@ -42,14 +40,17 @@ function App() {
         const delta = performance.now() - lastVisibleTimeMs;
         const elapsedTicks = delta / TICK_MS;
 
-        let updatingAnts = [...ants];
-        for (let tickCount = 0; tickCount < elapsedTicks; tickCount++) {
-          updatingAnts = moveAnts(updatingAnts, world);
-          sandFall(world);
-        }
+        setWorld(world => {
+          let updatingAnts = [...world.ants];
+          for (let tickCount = 0; tickCount < elapsedTicks; tickCount++) {
+            updatingAnts = moveAnts(updatingAnts, world);
+            sandFall(world);
+          }
 
-        setAnts(updatingAnts);
-        setWorld(world);
+          world.ants = updatingAnts;
+
+          return { ...world };
+        });
       }
     }
 
@@ -61,23 +62,7 @@ function App() {
   }, []);
 
   const [world, setWorld] = useState(() => {
-    return createWorld(WORLD_WIDTH, WORLD_HEIGHT, config.initialDirtPercent);
-  });
-
-  const [ants, setAnts] = useState(() => {
-    return Array.from({ length: config.initialAntCount }, () => {
-      // Put the ant at a random location along the x-axis that fits within the bounds of the world.
-      const x = Math.round(Math.random() * 1000) % world.width;
-      // Put the ant on the dirt.
-      const y = world.surfaceLevel;
-
-      const groundLevelDirections = footFacingDirections.filter(({ footDirection }) => footDirection === 'south');
-      const randomDirection = groundLevelDirections[Math.floor(Math.random() * groundLevelDirections.length)];
-
-      console.log('create ants running');
-  
-      return createAnt(x, y, 'wandering', randomDirection.facingDirection, randomDirection.footDirection);
-    });
+    return createWorld(WORLD_WIDTH, WORLD_HEIGHT, config.initialDirtPercent, config.initialAntCount);
   });
 
   useEffect(() => {
@@ -89,9 +74,11 @@ function App() {
 
       if (delta > TICK_MS) {
         lastTickTimeMs = timestamp;
-        setAnts(ants => moveAnts(ants, world));
-        sandFall(world);
-        setWorld(world);
+        setWorld(world => {
+          world.ants = moveAnts(world.ants, world);
+          sandFall(world);
+          return { ...world };
+        });
       }
 
       animationFrameId = window.requestAnimationFrame(handleAnimationFrame);
@@ -113,7 +100,7 @@ function App() {
           resolution: window.devicePixelRatio,
         }}
       >
-        <World elements={world.elements} ants={ants} gridSize={scale} surfaceLevel={world.surfaceLevel} />
+        <World elements={world.elements} ants={world.ants} gridSize={scale} surfaceLevel={world.surfaceLevel} />
       </Stage>
     </div>
   );
