@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/antfarm/static/css/main.1f7e61b7.css",
-    "main.js": "/antfarm/static/js/main.d109d202.js",
+    "main.js": "/antfarm/static/js/main.fa3fc548.js",
     "static/js/787.d285d1c9.chunk.js": "/antfarm/static/js/787.d285d1c9.chunk.js",
     "index.html": "/antfarm/index.html",
     "main.1f7e61b7.css.map": "/antfarm/static/css/main.1f7e61b7.css.map",
-    "main.d109d202.js.map": "/antfarm/static/js/main.d109d202.js.map",
+    "main.fa3fc548.js.map": "/antfarm/static/js/main.fa3fc548.js.map",
     "787.d285d1c9.chunk.js.map": "/antfarm/static/js/787.d285d1c9.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.1f7e61b7.css",
-    "static/js/main.d109d202.js"
+    "static/js/main.fa3fc548.js"
   ]
 }
