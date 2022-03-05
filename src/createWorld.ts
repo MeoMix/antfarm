@@ -4,12 +4,15 @@ export type World = {
   width: number;
   height: number;
   elements: Element[][];
+  surfaceLevel: number;
 }
 
 function createWorld(width: number, height: number, dirtPercent: number): World {
+  const surfaceLevel = height - (height * dirtPercent)
+
   const elements = Array.from({ length: height }, (_, rowIndex) => {
     return Array.from({ length: width }, () => {
-      return rowIndex <= (height - (height * dirtPercent)) ? 'air' : 'dirt';
+      return rowIndex <= surfaceLevel ? 'air' : 'dirt';
     });
   });
 
@@ -17,6 +20,7 @@ function createWorld(width: number, height: number, dirtPercent: number): World 
     width,
     height,
     elements,
+    surfaceLevel,
   }
 }
 

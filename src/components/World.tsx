@@ -9,11 +9,12 @@ import type { Element } from '../createWorld';
 
 type Props = {
   elements: Element[][];
-  gridSize: number;
   ants: ReturnType<typeof createAnt>[];
+  gridSize: number;
+  surfaceLevel: number;
 }
 
-function World({ elements, ants, gridSize }: Props) {
+function World({ elements, ants, gridSize, surfaceLevel }: Props) {
   return (
     <Container interactiveChildren={false}>
       {
@@ -28,11 +29,12 @@ function World({ elements, ants, gridSize }: Props) {
             return <Sand {...elementProps} />;
           }
 
-          if (element === 'air' && rowIndex <= 20) {
+          // TODO: Don't draw air as grid squares, leverage two backgrounds - one for air and one for subsurface dirt
+          if (element === 'air' && rowIndex <= surfaceLevel) {
             return <Air {...elementProps} />
           }
 
-          // Technically possible to draw air, but just leverage background color for now for performance?
+          // This will show brown since that's the background color of the world
           return null;
         }))
       }

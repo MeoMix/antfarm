@@ -11,10 +11,9 @@ const TICK_MS = 50;
 const WORLD_WIDTH = 90;
 const WORLD_HEIGHT = 60;
 
+// Figure out the width/height of the browser, get the smaller value, determine max stage size that fits in that dimension.
 function getScale() {
-  // Figure out the width/height of the browser, get the smaller value, determine max stage size that fits in that dimension.
-  const { innerWidth, innerHeight } = window;
-  return innerWidth >= innerHeight ? (innerHeight / WORLD_HEIGHT) : (innerWidth / WORLD_WIDTH);
+  return Math.min(window.innerHeight / WORLD_HEIGHT, window.innerWidth / WORLD_WIDTH);
 }
 
 function App() {
@@ -69,7 +68,7 @@ function App() {
       // Put the ant at a random location along the x-axis that fits within the bounds of the world.
       const x = Math.round(Math.random() * 1000) % world.width;
       // Put the ant on the dirt.
-      const y = world.height - (world.height * config.initialDirtPercent);
+      const y = world.surfaceLevel;
 
       const groundLevelDirections = footFacingDirections.filter(({ footDirection }) => footDirection === 'south');
       const randomDirection = groundLevelDirections[Math.floor(Math.random() * groundLevelDirections.length)];
@@ -112,7 +111,7 @@ function App() {
           resolution: window.devicePixelRatio,
         }}
       >
-        <World elements={world.elements} ants={ants} gridSize={scale} />
+        <World elements={world.elements} ants={ants} gridSize={scale} surfaceLevel={world.surfaceLevel} />
       </Stage>
     </div>
   );
