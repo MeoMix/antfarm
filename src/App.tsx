@@ -8,8 +8,30 @@ import createAnt from './createAnt';
 import { footFacingDirections, moveAnts, sandFall } from './util';
 
 const TICK_MS = 50;
+const WORLD_WIDTH = 90;
+const WORLD_HEIGHT = 60;
+
+function getScale() {
+  // Figure out the width/height of the browser, get the smaller value, determine max stage size that fits in that dimension.
+  const { innerWidth, innerHeight } = window;
+  return innerWidth >= innerHeight ? (innerHeight / WORLD_HEIGHT) : (innerWidth / WORLD_WIDTH);
+}
 
 function App() {
+  const [scale, setScale] = useState(() => getScale());
+
+  useEffect(() => {
+    function onWindowResize() {
+      setScale(getScale());
+    }
+
+    window.addEventListener('resize', onWindowResize, true);
+
+    return () => {
+      window.removeEventListener('resize', onWindowResize);
+    };
+  }, []);
+
   useEffect(() => {
     let lastVisibleTimeMs = 0;
 
@@ -39,8 +61,7 @@ function App() {
   }, []);
 
   const [world, setWorld] = useState(() => {
-    // TODO: width/height needs to be divisible by gridSize for now
-    return createWorld(90, 60, config.initialDirtPercent);
+    return createWorld(WORLD_WIDTH, WORLD_HEIGHT, config.initialDirtPercent);
   });
 
   const [ants, setAnts] = useState(() => {
@@ -84,14 +105,14 @@ function App() {
   return (
     <div className="App">
       <Stage
-        width={world.width * config.gridSize}
-        height={world.height * config.gridSize}
+        width={world.width * scale}
+        height={world.height * scale}
         options={{
           backgroundColor: 0x5f4a2a,
           resolution: window.devicePixelRatio,
         }}
       >
-        <World elements={world.elements} ants={ants} gridSize={config.gridSize} />
+        <World elements={world.elements} ants={ants} gridSize={scale} />
       </Stage>
     </div>
   );

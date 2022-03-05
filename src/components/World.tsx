@@ -42,6 +42,7 @@ function World({ elements, ants, gridSize }: Props) {
           <Ant
             x={ant.x * gridSize}
             y={ant.y * gridSize}
+            width={gridSize}
             facingDirection={ant.facingDirection}
             footDirection={ant.footDirection}
           />
