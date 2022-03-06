@@ -7,8 +7,9 @@ import config from './config';
 import { moveAnts, sandFall } from './util';
 
 const TICK_MS = 50;
-const WORLD_WIDTH = 90;
-const WORLD_HEIGHT = 60;
+// 16:9 aspect ratio to favor widescreen monitors, letterboxing will occur on all other sizes.
+const WORLD_WIDTH = 96;
+const WORLD_HEIGHT = 54;
 
 // Figure out the width/height of the browser, get the smaller value, determine max stage size that fits in that dimension.
 function getScale() {
