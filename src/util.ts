@@ -174,7 +174,7 @@ function turn(ant: Readonly<Ant>, world: World) {
 
   // No legal direction? Trapped! Drop sand and turn randomly in an attempt to dig out.
   let trappedAnt = ant;
-  if (ant.behavior === 'carrying' && (world.elements[ant.y][ant.x] === 'air' || Math.random() < config.probabilities.sandExclusion)) {
+  if (ant.behavior === 'carrying' && world.elements[ant.y][ant.x] === 'air') {
     trappedAnt = drop(ant, world);
   }
   const randomDirection = footFacingDirections[Math.floor(Math.random() * footFacingDirections.length)];
