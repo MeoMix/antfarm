@@ -1,5 +1,5 @@
 import './App.css';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Stage } from '@inlet/react-pixi';
 import { AppBar, Box, IconButton, Toolbar, Typography } from '@mui/material';
 import { Settings as SettingsIcon } from '@mui/icons-material';
@@ -45,36 +45,65 @@ function App() {
     };
   }, []);
 
+  const updateWorld = useCallback((delta: number) => {
+    const elapsedTicks = Math.floor(delta / TICK_MS);
+    if (elapsedTicks === 0) {
+      return;
+    }
+
+    setWorld(world => {
+      // TODO: Pretty sure I want to break references entirely here, but it's too expensive to call JSON.parse(JSON.stringify(world))
+      // I think I need to rewrite utils to treat world as immutable instead?
+      const updatedWorld = { ...world };
+      let updatingAnts = [...updatedWorld.ants];
+      for (let tickCount = 0; tickCount < elapsedTicks; tickCount++) {
+        updatingAnts = moveAnts(updatingAnts, updatedWorld);
+        sandFall(updatedWorld);
+      }
+
+      updatedWorld.ants = updatingAnts;
+
+      return updatedWorld;
+    });
+  }, []);
+
   useEffect(() => {
+    let animationFrameId = 0;
     let lastVisibleTimeMs = 0;
+    let lastWorldUpdateTimeMs = 0;
+
+    function handleAnimationFrame(timestamp: number) {
+      const delta = timestamp - lastWorldUpdateTimeMs;
+      if (delta > TICK_MS) {
+        lastWorldUpdateTimeMs = timestamp;
+        updateWorld(delta);
+      }
+
+      animationFrameId = window.requestAnimationFrame(handleAnimationFrame);
+    }
 
     function handleVisibilityChange() {
       if (document.hidden) {
+        window.cancelAnimationFrame(animationFrameId);
         lastVisibleTimeMs = performance.now();
       } else {
-        const delta = performance.now() - lastVisibleTimeMs;
-        const elapsedTicks = delta / TICK_MS;
+        // It's important to set lastTickTime
+        lastWorldUpdateTimeMs = performance.now();
+        const delta = lastWorldUpdateTimeMs - lastVisibleTimeMs;
+        updateWorld(delta);
 
-        setWorld(world => {
-          let updatingAnts = [...world.ants];
-          for (let tickCount = 0; tickCount < elapsedTicks; tickCount++) {
-            updatingAnts = moveAnts(updatingAnts, world);
-            sandFall(world);
-          }
-
-          world.ants = updatingAnts;
-
-          return { ...world };
-        });
+        animationFrameId = window.requestAnimationFrame(handleAnimationFrame);
       }
     }
-
+    
+    animationFrameId = window.requestAnimationFrame(handleAnimationFrame);
     document.addEventListener('visibilitychange', handleVisibilityChange, true);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange, true);
+      window.cancelAnimationFrame(animationFrameId);
     }
-  }, []);
+  }, [updateWorld]);
 
   const [world, setWorld] = useState(() => {
     const savedWorldJson = localStorage.getItem('antfarm-world');
@@ -83,32 +112,8 @@ function App() {
     return savedWorld ?? createNewWorld();
   });
 
-  useEffect(() => {
-    let animationFrameId = 0;
-    let lastTickTimeMs = 0;
-
-    function handleAnimationFrame(timestamp: number) {
-      const delta = timestamp - lastTickTimeMs;
-
-      if (delta > TICK_MS) {
-        lastTickTimeMs = timestamp;
-        setWorld(world => {
-          world.ants = moveAnts(world.ants, world);
-          sandFall(world);
-          return { ...world };
-        });
-      }
-
-      animationFrameId = window.requestAnimationFrame(handleAnimationFrame);
-    }
-
-    animationFrameId = window.requestAnimationFrame(handleAnimationFrame);
-
-    return () => {
-      window.cancelAnimationFrame(animationFrameId);
-    };
-  }, []);
-
+  // TODO: idk how to write this properly just yet. it's wrong that setInterval would get set/cleared frequently,
+  // but world is updated a lot and it's no good if a stale world is saved
   useEffect(() => {
     function saveWorld() {
       localStorage.setItem('antfarm-world', JSON.stringify(world));
