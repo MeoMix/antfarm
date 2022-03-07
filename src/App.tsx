@@ -52,18 +52,17 @@ function App() {
     }
 
     setWorld(world => {
-      // TODO: Pretty sure I want to break references entirely here, but it's too expensive to call JSON.parse(JSON.stringify(world))
+      // TODO: Pretty sure I want to break references to world entirely here, but it's too expensive to call JSON.parse(JSON.stringify(world))
       // I think I need to rewrite utils to treat world as immutable instead?
-      const updatedWorld = { ...world };
-      let updatingAnts = [...updatedWorld.ants];
+      let updatingAnts = [...world.ants];
       for (let tickCount = 0; tickCount < elapsedTicks; tickCount++) {
-        updatingAnts = moveAnts(updatingAnts, updatedWorld);
-        sandFall(updatedWorld);
+        updatingAnts = moveAnts(updatingAnts, world);
+        sandFall(world);
       }
 
-      updatedWorld.ants = updatingAnts;
+      world.ants = updatingAnts;
 
-      return updatedWorld;
+      return { ...world };
     });
   }, []);
 
