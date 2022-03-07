@@ -128,7 +128,7 @@ function App() {
       window.removeEventListener('unload', onWindowUnload);
       window.clearInterval(intervalId);
     };
-  }, []);
+  }, [world]);
 
   function handleSettingsClick(){
     setIsSettingsDialogOpen(true);
