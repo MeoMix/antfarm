@@ -21,11 +21,20 @@ import reportWebVitals from './reportWebVitals';
 // surely browser handles this just fine
 import { Loader } from 'pixi.js';
 import antImage from './ant.png';
+import { createTheme, ThemeProvider } from '@mui/material';
+
+const theme = createTheme({
+  palette: {
+    mode: 'dark',
+  },
+});
 
 Loader.shared.add('Ant', antImage, () => {
   ReactDOM.render(
     <React.StrictMode>
-      <App />
+      <ThemeProvider theme={theme}>
+        <App />
+      </ThemeProvider>
     </React.StrictMode>,
     document.getElementById('root')
   );
