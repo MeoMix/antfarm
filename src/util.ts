@@ -206,6 +206,10 @@ export function moveAnts(ants: Readonly<Ant[]>, world: World) {
     if (movingAnt.timer > 0) {
       return movingAnt;
     }
+
+    if (movingAnt.timer < 0) {
+      console.error('ant timer below 0 - broken state');
+    }
     
     /* Gravity check. */
     const footDirections = getFootDirections(movingAnt.facingDirection, movingAnt.footDirection);
