@@ -4,7 +4,11 @@
   "homepage": "https://meomix.github.io/antfarm/",
   "private": true,
   "dependencies": {
+    "@emotion/react": "^11.8.1",
+    "@emotion/styled": "^11.8.1",
     "@inlet/react-pixi": "^6.6.5",
+    "@mui/icons-material": "^5.4.4",
+    "@mui/material": "^5.4.4",
     "@testing-library/jest-dom": "^5.16.1",
     "@testing-library/react": "^12.1.2",
     "@testing-library/user-event": "^13.5.0",
