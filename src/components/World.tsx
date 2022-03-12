@@ -9,7 +9,8 @@ import type { Element } from '../createWorld';
 
 type Props = {
   elements: Element[][];
-  ants: ReturnType<typeof createAnt>[];
+  // TODO: Am I thinking about this incorrectly if I have naming conflict between Ant (sprite) and Ant type (model?)
+  ants: Readonly<ReturnType<typeof createAnt>[]>;
   gridSize: number;
   surfaceLevel: number;
 }

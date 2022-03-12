@@ -138,7 +138,7 @@ function move(ant: Readonly<Ant>, world: World) {
 
 function dig(ant: Readonly<Ant>, isForcedForward: boolean, world: World) {
   const { facingDirection, footDirection } = isForcedForward ? ant : getFootDirections(ant.facingDirection, ant.footDirection);
-  const delta = getDelta(facingDirection, footDirection); 
+  const delta = getDelta(facingDirection, footDirection);
 
   const x = ant.x + delta.x;
   const y = ant.y + delta.y;
@@ -199,8 +199,8 @@ function carry(ant: Readonly<Ant>, world: World) {
   return move(carryingAnt, world);
 }
 
-export function moveAnts(ants: Readonly<Ant[]>, world: World) {
-  return ants.map(ant => {
+export function moveAnts(world: World) {
+  return world.ants.map(ant => {
     const movingAnt = { ...ant, timer: ant.timer - 1 };
 
     if (movingAnt.timer > 0) {
@@ -210,7 +210,7 @@ export function moveAnts(ants: Readonly<Ant[]>, world: World) {
     if (movingAnt.timer < 0) {
       console.error('ant timer below 0 - broken state');
     }
-    
+
     /* Gravity check. */
     const footDirections = getFootDirections(movingAnt.facingDirection, movingAnt.footDirection);
     const footDelta = getDelta(footDirections.facingDirection, footDirections.footDirection);

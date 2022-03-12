@@ -54,15 +54,13 @@ function App() {
     setWorld(world => {
       // TODO: Pretty sure I want to break references to world entirely here, but it's too expensive to call JSON.parse(JSON.stringify(world))
       // I think I need to rewrite utils to treat world as immutable instead?
-      let updatingAnts = [...world.ants];
+      let updatedWorld = { ...world };
       for (let tickCount = 0; tickCount < elapsedTicks; tickCount++) {
-        updatingAnts = moveAnts(updatingAnts, world);
-        sandFall(world);
+        updatedWorld.ants = moveAnts(updatedWorld);
+        sandFall(updatedWorld);
       }
 
-      world.ants = updatingAnts;
-
-      return { ...world };
+      return updatedWorld;
     });
   }, []);
 
@@ -94,7 +92,7 @@ function App() {
         animationFrameId = window.requestAnimationFrame(handleAnimationFrame);
       }
     }
-    
+
     animationFrameId = window.requestAnimationFrame(handleAnimationFrame);
     document.addEventListener('visibilitychange', handleVisibilityChange, true);
 

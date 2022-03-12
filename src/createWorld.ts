@@ -18,7 +18,7 @@ export type World = {
   elements: Element[][];
   fallingSands: FallingSand[];
   surfaceLevel: number;
-  ants: Ant[],
+  ants: Readonly<Ant[]>,
 }
 
 function createWorld(width: number, height: number, dirtPercent: number, antCount: number): World {
