@@ -44,8 +44,8 @@ function World({ elements, ants, gridSize, surfaceLevel }: Props) {
             x={ant.x * gridSize}
             y={ant.y * gridSize}
             width={gridSize}
-            facingDirection={ant.facingDirection}
-            footDirection={ant.footDirection}
+            facing={ant.facing}
+            angle={ant.angle}
           />
         ))
       }

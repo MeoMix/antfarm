@@ -1,7 +1,6 @@
 
 import createAnt from './createAnt';
 import type { Ant } from './createAnt';
-import { footFacingDirections } from './util';
 
 export type Element = 'dirt' | 'sand' | 'air';
 
@@ -35,11 +34,10 @@ function createWorld(width: number, height: number, dirtPercent: number, antCoun
     const x = Math.round(Math.random() * 1000) % width;
     // Put the ant on the dirt.
     const y = surfaceLevel;
+    // Randomly position ant facing left or right
+    const facing = Math.floor(Math.random() * 2) === 0 ? 'left' : 'right';
 
-    const groundLevelDirections = footFacingDirections.filter(({ footDirection }) => footDirection === 'south');
-    const randomDirection = groundLevelDirections[Math.floor(Math.random() * groundLevelDirections.length)];
-
-    return createAnt(x, y, 'wandering', randomDirection.facingDirection, randomDirection.footDirection);
+    return createAnt(x, y, 'wandering', facing, 0);
   });
 
   const fallingSands = [] as FallingSand[];

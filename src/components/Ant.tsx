@@ -1,27 +1,25 @@
 import { Sprite } from '@inlet/react-pixi';
 import { Loader } from 'pixi.js';
 import { memo } from 'react';
-import type { Direction } from '../types';
+import type { Facing, Angle } from '../createAnt';
 
 type Props = {
   x: number;
   y: number;
   width: number;
-  facingDirection: Direction;
-  footDirection: Direction;
+  facing: Facing;
+  angle: Angle;
 }
 
-function Ant({ x, y, width, facingDirection, footDirection }: Props) {
-  const xFlip = facingDirection === 'west' || facingDirection === 'south' ? -1 : 1;
-  const yFlip = footDirection === 'north' || footDirection === 'west' ? -1 : 1;
-  const angle = footDirection === 'south' || footDirection === 'north' ? 0 : -90;
+function Ant({ x, y, width, facing, angle }: Props) {
+  const xFlip = facing === 'right' ? 1 : -1;
   const image = Loader.shared.resources['Ant'].data as HTMLImageElement;
 
   return (
     <Sprite
       interactiveChildren={false}
       image={image}
-      // move pivot to center so changes to angle/scale maintain consistent centering 
+      // move pivot to center so changes to angle/scale maintain consistent centering
       pivot={{ x: width / 2, y: width / 2 }}
       // move origin to the same location as its pivot to maintain consistent centering logic
       anchor={{ x: 0.5, y: 0.5 }}
@@ -30,8 +28,9 @@ function Ant({ x, y, width, facingDirection, footDirection }: Props) {
       y={y + (width / 2)}
       // TODO: visually more appropriate if ants took up multiple grid cells along x axis.
       // scaling img down to fit into grid cell the size of width
-      scale={[xFlip * (width / image.width), yFlip * (width / image.height)]}
-      angle={angle}
+      scale={[xFlip * (width / image.width), width / image.height]}
+      // TODO: is this a bad architectural decision? technically I am thinking about mirroring improperly by inverting angle when x is flipped?
+      angle={-angle * xFlip}
     />
   )
 }

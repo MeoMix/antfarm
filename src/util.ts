@@ -1,91 +1,34 @@
-import type { Direction } from './types';
-import type { Ant } from './createAnt';
+import { Ant, getRotatedAngle } from './createAnt';
 import config from './config';
 import { getTimer } from './createAnt';
+import type { Facing, Angle } from './createAnt';
 import type { World  } from './createWorld';
 
-export function getOppositeDirection(direction: Direction) {
-  switch (direction) {
-    case 'north': return 'south' as const;
-    case 'south': return 'north' as const;
-    case 'west': return 'east' as const;
-    case 'east': return 'west' as const;
-  }
-}
-
-export const footFacingDirections = [
-  { footDirection: 'south' as const, facingDirection: 'west' as const },
-  { footDirection: 'south' as const, facingDirection: 'east' as const },
-
-  { footDirection: 'north' as const, facingDirection: 'west' as const },
-  { footDirection: 'north' as const, facingDirection: 'east' as const },
-
-  { footDirection: 'east' as const, facingDirection: 'south' as const },
-  { footDirection: 'east' as const, facingDirection: 'north' as const },
-
-  { footDirection: 'west' as const, facingDirection: 'south' as const },
-  { footDirection: 'west' as const, facingDirection: 'north' as const },
-];
-
-// TODO: Probably more clear if expressed as rotate clockwise/counter-clockwise
-function getFootDirections(facingDirection: Direction, footDirection: Direction) {
-  return {
-    facingDirection: footDirection,
-    footDirection: getOppositeDirection(facingDirection),
-  }
-}
-
-function getBackDirections(facingDirection: Direction, footDirection: Direction) {
-  return {
-    facingDirection: getOppositeDirection(footDirection),
-    footDirection: facingDirection,
-  };
-}
-
-function getDelta(facingDirection: Direction, footDirection: Direction) {
-  if (footDirection === 'south' || footDirection === 'north') {
-    switch (facingDirection) {
-      case 'west':
-        return { x: -1, y: 0 };
-      case 'east':
-        return { x: 1, y: 0 };
-      case 'north':
-      case 'south':
-        throw new Error('invalid');
+function getDelta(facing: Facing, angle: Angle) {
+  if (angle === 0 || angle === 180) {
+    if (facing === 'right') {
+      return { x: angle === 0 ? 1 : -1, y: 0 };
+    } else {
+      return { x: angle === 0 ? -1 : 1, y: 0 };
     }
   }
 
-  if (footDirection === 'east' || footDirection === 'west') {
-    switch (facingDirection) {
-      case 'west':
-      case 'east':
-        throw new Error('invalid');
-      case 'north':
-        return { x: 0, y: -1 };
-      case 'south':
-        return { x: 0, y: 1 };
-    }
-  }
-
-  throw new Error('unsupported');
+  return { x: 0, y: angle === 90 ? -1 : 1 };
 }
 
-function isLegalDirection(ant: Readonly<Ant>, facingDirection: Direction, footDirection: Direction, world: World) {
-  const delta = getDelta(facingDirection, footDirection);
+function isLegalDirection(ant: Readonly<Ant>, facing: Facing, angle: Angle, world: World) {
+  // Check that there is air ahead
+  const delta = getDelta(facing, angle);
   const newX = ant.x + delta.x;
   const newY = ant.y + delta.y;
-
-  // Check that there is air ahead
   if (newX < 0 || newX >= world.width || newY < 0 || newY >= world.height || world.elements[newY][newX] !== 'air') {
     return false;
   }
 
-  const footDirections = getFootDirections(facingDirection, footDirection);
-  const footDelta = getDelta(footDirections.facingDirection, footDirections.footDirection);
+  // Check that there is solid footing
+  const footDelta = getDelta(facing, getRotatedAngle(angle, 1));
   const footNewX = ant.x + footDelta.x;
   const footNewY = ant.y + footDelta.y;
-
-  // Check that there is solid footing
   if (footNewX >= 0 && footNewX < world.width && footNewY >= 0 && footNewY < world.height && world.elements[footNewY][footNewX] === 'air') {
     return false;
   }
@@ -94,7 +37,7 @@ function isLegalDirection(ant: Readonly<Ant>, facingDirection: Direction, footDi
 }
 
 function move(ant: Readonly<Ant>, world: World) {
-  const delta = getDelta(ant.facingDirection, ant.footDirection);
+  const delta = getDelta(ant.facing, ant.angle);
 
   const newX = ant.x + delta.x;
   const newY = ant.y + delta.y;
@@ -118,8 +61,8 @@ function move(ant: Readonly<Ant>, world: World) {
   }
 
   /* We can move forward.  But first, check footing. */
-  const footDirections = getFootDirections(ant.facingDirection, ant.footDirection);
-  const footDelta = getDelta(footDirections.facingDirection, footDirections.footDirection);
+  const angle = getRotatedAngle(ant.angle, 1);
+  const footDelta = getDelta(ant.facing, angle);
 
   const fx = newX + footDelta.x;
   const fy = newY + footDelta.y;
@@ -130,15 +73,15 @@ function move(ant: Readonly<Ant>, world: World) {
     if (ant.behavior === 'carrying' && ant.y <= world.surfaceLevel && Math.random() < config.probabilities.convexAboveDirtDrop) {
       updatedAnt = drop(ant, world);
     }
-    return { ...updatedAnt, x: fx, y: fy, facingDirection: footDirections.facingDirection, footDirection: footDirections.footDirection };
+    return { ...updatedAnt, x: fx, y: fy, angle };
   }
 
   return { ...ant, x: newX, y: newY };
 }
 
 function dig(ant: Readonly<Ant>, isForcedForward: boolean, world: World) {
-  const { facingDirection, footDirection } = isForcedForward ? ant : getFootDirections(ant.facingDirection, ant.footDirection);
-  const delta = getDelta(facingDirection, footDirection);
+  const angle = isForcedForward ? ant.angle : getRotatedAngle(ant.angle, 1)
+  const delta = getDelta(ant.facing, angle);
 
   const x = ant.x + delta.x;
   const y = ant.y + delta.y;
@@ -155,21 +98,33 @@ function dig(ant: Readonly<Ant>, isForcedForward: boolean, world: World) {
 
 function turn(ant: Readonly<Ant>, world: World) {
   // First try turning perpendicularly towards the ant's back. If that fails, try turning around.
-  const backDirections1 = getBackDirections(ant.facingDirection, ant.footDirection);
-  if (isLegalDirection(ant, backDirections1.facingDirection, backDirections1.footDirection, world)){
-    return { ...ant, facingDirection: backDirections1.facingDirection, footDirection: backDirections1.footDirection };
+  const backAngle = getRotatedAngle(ant.angle, -1);
+  if (isLegalDirection(ant, ant.facing, backAngle, world)){
+    return { ...ant, angle: backAngle };
   }
 
-  const backDirections2 = getBackDirections(backDirections1.facingDirection, backDirections1.footDirection);
-  if (isLegalDirection(ant, backDirections2.facingDirection, backDirections2.footDirection, world)) {
-    return { ...ant, facingDirection: backDirections2.facingDirection, footDirection: backDirections2.footDirection };
+  const turnAroundAngle = getRotatedAngle(ant.angle, -2);
+  if (isLegalDirection(ant, ant.facing, turnAroundAngle, world)) {
+    return { ...ant, angle: turnAroundAngle };
   }
 
   // Randomly turn in a valid different when unable to simply turn around.
-  const okDirections = footFacingDirections.filter(({ facingDirection, footDirection }) => (facingDirection !== ant.facingDirection || footDirection !== ant.footDirection) && isLegalDirection(ant, facingDirection, footDirection, world));
+  const facingAngles = [
+    { facing: 'left' as const, angle: 0 as const },
+    { facing: 'left' as const, angle: 90 as const },
+    { facing: 'left' as const, angle: 180 as const },
+    { facing: 'left' as const, angle: 270 as const },
+
+    { facing: 'right' as const, angle: 0 as const  },
+    { facing: 'right' as const, angle: 90 as const },
+    { facing: 'right' as const, angle: 180 as const },
+    { facing: 'right' as const, angle: 270 as const },
+  ];
+
+  const okDirections = facingAngles.filter(({ facing, angle }) => (facing !== ant.facing || angle !== ant.angle) && isLegalDirection(ant, facing, angle, world));
   if (okDirections.length > 0) {
     const okDirection = okDirections[Math.floor(Math.random() * okDirections.length)];
-    return { ...ant, facingDirection: okDirection.facingDirection, footDirection: okDirection.footDirection };
+    return { ...ant, facing: okDirection.facing, angle: okDirection.angle };
   }
 
   // No legal direction? Trapped! Drop sand and turn randomly in an attempt to dig out.
@@ -177,9 +132,9 @@ function turn(ant: Readonly<Ant>, world: World) {
   if (ant.behavior === 'carrying' && world.elements[ant.y][ant.x] === 'air') {
     trappedAnt = drop(ant, world);
   }
-  const randomDirection = footFacingDirections[Math.floor(Math.random() * footFacingDirections.length)];
+  const randomDirection = facingAngles[Math.floor(Math.random() * facingAngles.length)];
 
-  return { ...trappedAnt, facingDirection: randomDirection.facingDirection, footDirection: randomDirection.footDirection }
+  return { ...trappedAnt, facing: randomDirection.facing, angle: randomDirection.angle }
 }
 
 function wander(ant: Readonly<Ant>, world: World) {
@@ -212,8 +167,7 @@ export function moveAnts(world: World) {
     }
 
     /* Gravity check. */
-    const footDirections = getFootDirections(movingAnt.facingDirection, movingAnt.footDirection);
-    const footDelta = getDelta(footDirections.facingDirection, footDirections.footDirection);
+    const footDelta = getDelta(movingAnt.facing, getRotatedAngle(movingAnt.angle, 1));
     const fx = movingAnt.x + footDelta.x;
     const fy = movingAnt.y + footDelta.y;
 
@@ -245,7 +199,7 @@ export function moveAnts(world: World) {
         return carry(movingAnt, world);
     }
 
-    return movingAnt;
+    throw new Error(`Unsupported behavior: ${movingAnt.behavior}`);
   });
 }
 

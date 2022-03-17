@@ -9,9 +9,6 @@ import config from './config';
 import { moveAnts, sandFall } from './util';
 import SettingsDialog from './components/SettingsDialog';
 
-// Save the world once a minute because it's possible the browser could crash so saving on window unload isn't 100% reliable.
-const AUTO_SAVE_INTERVAL_MS = 60 * 1000;
-const TICK_MS = 50;
 // 16:9 aspect ratio to favor widescreen monitors, letterboxing will occur on all other sizes.
 const WORLD_WIDTH = 96;
 const WORLD_HEIGHT = 54;
@@ -46,7 +43,7 @@ function App() {
   }, []);
 
   const updateWorld = useCallback((delta: number) => {
-    const elapsedTicks = Math.floor(delta / TICK_MS);
+    const elapsedTicks = Math.floor(delta / config.tickRateMs);
     if (elapsedTicks === 0) {
       return;
     }
@@ -71,7 +68,7 @@ function App() {
 
     function handleAnimationFrame(timestamp: number) {
       const delta = timestamp - lastWorldUpdateTimeMs;
-      if (delta > TICK_MS) {
+      if (delta > config.tickRateMs) {
         lastWorldUpdateTimeMs = timestamp;
         updateWorld(delta);
       }
@@ -124,7 +121,7 @@ function App() {
 
     const intervalId = window.setInterval(() => {
       saveWorld();
-    }, AUTO_SAVE_INTERVAL_MS);
+    }, config.autoSaveIntervalMs);
 
     return () => {
       window.removeEventListener('unload', onWindowUnload);

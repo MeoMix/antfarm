@@ -1,4 +1,7 @@
 const config = {
+  tickRateMs: 50,
+  // Save the world once a minute because it's possible the browser could crash so saving on window unload isn't 100% reliable.
+  autoSaveIntervalMs: 60 * 1000,
   compactSandDepth: 15, // sand turns to dirt when stacked this high
   initialDirtPercent: 2 / 3,
   initialAntCount: 20,
