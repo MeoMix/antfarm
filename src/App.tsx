@@ -1,6 +1,6 @@
 import './App.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Stage } from '@inlet/react-pixi';
+import { Stage, Container } from '@inlet/react-pixi';
 import { AppBar, Box, IconButton, Toolbar, Typography } from '@mui/material';
 import { Settings as SettingsIcon } from '@mui/icons-material';
 import World from './components/World';
@@ -170,7 +170,9 @@ function App() {
               resolution: window.devicePixelRatio,
             }}
           >
-            <World elements={world.elements} ants={world.ants} gridSize={scale} surfaceLevel={world.surfaceLevel} />
+            <Container scale={scale}>
+              <World elements={world.elements} ants={world.ants} surfaceLevel={world.surfaceLevel} />
+            </Container>
           </Stage>
         </Box>
       </Box>

@@ -11,21 +11,19 @@ type Props = {
   elements: Element[][];
   // TODO: Am I thinking about this incorrectly if I have naming conflict between Ant (sprite) and Ant type (model?)
   ants: Readonly<ReturnType<typeof createAnt>[]>;
-  gridSize: number;
   surfaceLevel: number;
 }
 
-// TODO: If everything is multiplied by gridSize in here - does that mean I can apply gridSize at a higher level to scale everything instead?
-function World({ elements, ants, gridSize, surfaceLevel }: Props) {
+function World({ elements, ants, surfaceLevel }: Props) {
   return (
     <>
       { /* Air/Tunnel are non-interactive and so can be rendered with a single sprite. Dirt/Sand are interactive and so need to be rendered in grid chunks. */ }
-      <Air x={0} y={0} width={elements[0].length * gridSize} height={(surfaceLevel + 1) * gridSize} />
-      <Tunnel x={0} y={(surfaceLevel + 1) * gridSize} width={elements[0].length * gridSize} height={(elements.length - (surfaceLevel + 1)) * gridSize} />
+      <Air x={0} y={0} width={elements[0].length} height={surfaceLevel + 1} />
+      <Tunnel x={0} y={surfaceLevel + 1} width={elements[0].length} height={elements.length - surfaceLevel - 1} />
 
       {
-        elements.map((elementRow, rowIndex) => elementRow.map((element, columnIndex) => {
-          const elementProps = { x: columnIndex * gridSize, y: rowIndex * gridSize, width: gridSize, height: gridSize };
+        elements.map((elementRow, y) => elementRow.map((element, x) => {
+          const elementProps = { x, y, width: 1, height: 1 };
 
           if (element === 'dirt') {
             return <Dirt {...elementProps} />;
@@ -42,9 +40,9 @@ function World({ elements, ants, gridSize, surfaceLevel }: Props) {
       {
         ants.map(ant => (
           <Ant
-            x={ant.location.x * gridSize}
-            y={ant.location.y * gridSize}
-            width={gridSize}
+            x={ant.location.x}
+            y={ant.location.y}
+            width={1}
             facing={ant.facing}
             angle={ant.angle}
           />
