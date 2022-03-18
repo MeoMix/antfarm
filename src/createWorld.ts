@@ -35,7 +35,7 @@ function createWorld(width: number, height: number, dirtPercent: number, antCoun
     // Put the ant on the dirt.
     const y = surfaceLevel;
     // Randomly position ant facing left or right
-    const facing = Math.floor(Math.random() * 2) === 0 ? 'left' : 'right';
+    const facing = Math.random() < 0.5 ? 'left' : 'right';
 
     return createAnt(x, y, 'wandering', facing, 0);
   });

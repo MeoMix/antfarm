@@ -1,10 +1,12 @@
 import { Ant, getRotatedAngle } from './createAnt';
 import config from './config';
 import { getTimer } from './createAnt';
+import { add as addPoint } from './Point';
+import type { Point } from './Point';
 import type { Facing, Angle } from './createAnt';
 import type { World  } from './createWorld';
 
-function getDelta(facing: Facing, angle: Angle) {
+function getDelta(facing: Facing, angle: Angle): Point {
   if (angle === 0 || angle === 180) {
     if (facing === 'right') {
       return { x: angle === 0 ? 1 : -1, y: 0 };
@@ -16,25 +18,26 @@ function getDelta(facing: Facing, angle: Angle) {
   return { x: 0, y: angle === 90 ? -1 : 1 };
 }
 
-/** Returns the type of element at a given position in the world or undefined if out of bounds */
-function getElement(x: number, y: number, { width, height, elements }: World) {
-  return (x < 0 || x >= width || y < 0 || y >= height) ? undefined : elements[y][x];
+/** Returns true if the given point falls within the bounds of the world */
+function isWithinBounds({ x, y }: Point, { width, height }: World) {
+  return x >= 0 && x < width && y >= 0 && y < height;
 }
 
+/** Returns the type of element at a given position in the world or undefined if out of bounds */
+function getElement(location: Point, world: World) {
+  return isWithinBounds(location, world) ? world.elements[location.y][location.x] : undefined;
+}
+
+// TODO: This function is a little weird because it's handling two distinct concepts - going forward or going down.
+/** Returns false if the location in front of a given ant isn't air or if the location underneath the ant is air */
 function isLegalDirection(ant: Readonly<Ant>, facing: Facing, angle: Angle, world: World) {
   // Check that there is air ahead
-  const delta = getDelta(facing, angle);
-  const newX = ant.x + delta.x;
-  const newY = ant.y + delta.y;
-  if (getElement(newX, newY, world) !== 'air') {
+  if (getElement(addPoint(ant.location, getDelta(facing, angle)), world) !== 'air') {
     return false;
   }
 
   // Check that there is solid footing
-  const footDelta = getDelta(facing, getRotatedAngle(angle, 1));
-  const footNewX = ant.x + footDelta.x;
-  const footNewY = ant.y + footDelta.y;
-  if (getElement(footNewX, footNewY, world) === 'air') {
+  if (getElement(addPoint(ant.location, getDelta(facing, getRotatedAngle(angle, 1))), world) === 'air') {
     return false;
   }
 
@@ -43,57 +46,46 @@ function isLegalDirection(ant: Readonly<Ant>, facing: Facing, angle: Angle, worl
 
 function move(ant: Readonly<Ant>, world: World) {
   const delta = getDelta(ant.facing, ant.angle);
+  const newPoint = addPoint(ant.location, delta);
 
-  const newX = ant.x + delta.x;
-  const newY = ant.y + delta.y;
-
-  if (newX < 0 || newX >= world.width || newY < 0 || newY >= world.height) {
+  if (!isWithinBounds(newPoint, world)) {
     // Hit an edge - need to turn.
     return turn(ant, world);
   }
 
   // Check if hitting dirt or sand and, if so, dig.
-  if (getElement(newX, newY, world) !== 'air') {
-    /* Hit dirt or sand.  Dig? */
+  const element = getElement(newPoint, world);
+  if (element === 'dirt' || element === 'sand') {
     // If ant is wandering *below ground level* and bumps into sand or has a chance to dig, dig.
-    if (ant.behavior === 'wandering' && ant.y > world.surfaceLevel && (getElement(newX, newY, world) === 'sand' || Math.random() < config.probabilities.concaveBelowDirtDig)) {
-      /* Yes, try digging. */
+    if (ant.behavior === 'wandering' && ant.location.y > world.surfaceLevel && (getElement(newPoint, world) === 'sand' || Math.random() < config.probabilities.concaveBelowDirtDig)) {
       return dig(ant, true, world);
     } else {
-      /* Nope, no digging.  Turn. */
       return turn(ant, world);
     }
   }
 
+  // TODO: This bit reads a little odd. I would think gravity would handle this scenario
   /* We can move forward.  But first, check footing. */
-  const angle = getRotatedAngle(ant.angle, 1);
-  const footDelta = getDelta(ant.facing, angle);
-
-  const fx = newX + footDelta.x;
-  const fy = newY + footDelta.y;
-
-  if (getElement(fx, fy, world) === 'air') {
+  const footAngle = getRotatedAngle(ant.angle, 1);
+  const footPoint = addPoint(newPoint, getDelta(ant.facing, footAngle));
+  if (getElement(footPoint, world) === 'air') {
     /* Whoops, we're over air.  Move into the air and turn towards the feet.  But first, see if we should drop. */
-    let updatedAnt = ant;
-    if (ant.behavior === 'carrying' && ant.y <= world.surfaceLevel && Math.random() < config.probabilities.convexAboveDirtDrop) {
-      updatedAnt = drop(ant, world);
-    }
-    return { ...updatedAnt, x: fx, y: fy, angle };
+    const shouldDropDirt = ant.behavior === 'carrying' && ant.location.y <= world.surfaceLevel && Math.random() < config.probabilities.convexAboveDirtDrop;
+    const updatedAnt = shouldDropDirt ? drop(ant, world) : ant;
+    return { ...updatedAnt, location: footPoint, angle: footAngle };
   }
 
-  return { ...ant, x: newX, y: newY };
+  return { ...ant, location: newPoint };
 }
 
 function dig(ant: Readonly<Ant>, isForcedForward: boolean, world: World) {
   const angle = isForcedForward ? ant.angle : getRotatedAngle(ant.angle, 1)
-  const delta = getDelta(ant.facing, angle);
+  const digLocation = addPoint(ant.location, getDelta(ant.facing, angle));
 
-  const x = ant.x + delta.x;
-  const y = ant.y + delta.y;
-
-  if (getElement(x, y, world) !== 'air') {
-    world.elements[y][x] = 'air';
-    loosenNeighbors(x, y, world);
+  const element = getElement(digLocation, world);
+  if (element === 'dirt' || element === 'sand') {
+    world.elements[digLocation.y][digLocation.x] = 'air';
+    loosenNeighbors(digLocation, world);
 
     return { ...ant, behavior: 'carrying' as const, timer: getTimer('carrying') };
   }
@@ -134,7 +126,7 @@ function turn(ant: Readonly<Ant>, world: World) {
 
   // No legal direction? Trapped! Drop sand and turn randomly in an attempt to dig out.
   let trappedAnt = ant;
-  if (ant.behavior === 'carrying' && getElement(ant.x, ant.y, world) === 'air') {
+  if (ant.behavior === 'carrying' && getElement(ant.location, world) === 'air') {
     trappedAnt = drop(ant, world);
   }
   const randomDirection = facingAngles[Math.floor(Math.random() * facingAngles.length)];
@@ -148,8 +140,8 @@ function wander(ant: Readonly<Ant>, world: World) {
 }
 
 function drop(ant: Readonly<Ant>, world: World) {
-  world.elements[ant.y][ant.x] = 'sand' as const;
-  loosenOne(ant.x, ant.y, world);
+  world.elements[ant.location.y][ant.location.x] = 'sand' as const;
+  loosenOne(ant.location, world);
 
   return { ...ant, behavior: 'wandering' as const, timer: getTimer('wandering') };
 }
@@ -173,13 +165,13 @@ export function moveAnts(world: World) {
 
     /* Gravity check. */
     const footDelta = getDelta(movingAnt.facing, getRotatedAngle(movingAnt.angle, 1));
-    const fx = movingAnt.x + footDelta.x;
-    const fy = movingAnt.y + footDelta.y;
+    const f = addPoint(movingAnt.location, footDelta);
 
-    if (getElement(fx, fy, world) === 'air') {
+    if (getElement(f, world) === 'air') {
       /* Whoops, whatever we were walking on disappeared. */
-      if (getElement(movingAnt.x, movingAnt.y + 1, world) === 'air') {
-        return { ...movingAnt, y: movingAnt.y + 1};
+      const fallPoint = addPoint(movingAnt.location, { x: 0, y: 1 });
+      if (getElement(fallPoint, world) === 'air') {
+        return { ...movingAnt, location: fallPoint};
       } else {
         /* Can't fall?  Try turning. */
         return turn(movingAnt, world);
@@ -208,29 +200,29 @@ export function moveAnts(world: World) {
   });
 }
 
-function loosenNeighbors(xc: number, yc: number, world: World) {
-  for (let y = yc + 2; y >= yc - 2; --y) {
-    for (let x = xc - 2; x <= xc + 2; ++x) {
-      if ((x !== xc || y !== yc) && getElement(x, y, world) === 'sand') {
-        loosenOne(x, y, world);
+function loosenNeighbors(location: Point, world: World) {
+  for (let y = location.y + 2; y >= location.y - 2; --y) {
+    for (let x = location.x - 2; x <= location.x + 2; ++x) {
+      if ((x !== location.x || y !== location.y) && getElement({ x, y }, world) === 'sand') {
+        loosenOne({ x, y }, world);
       }
     }
   }
 }
 
- function loosenOne(x: number, y: number, world: World) {
+ function loosenOne(location: Point, world: World) {
   /* Check if there's already loose sand at this location. */
-  if (world.fallingSands.find(sand => sand.x === x && sand.y === y)) {
+  if (world.fallingSands.find(sand => sand.x === location.x && sand.y === location.y)) {
     return;
   }
 
-  world.fallingSands.push({ x, y });
+  world.fallingSands.push(location);
 }
 
 function getSandDepth(x: number, y: number, world: World) {
   let sandDepth = 0;
 
-  while (getElement(x, sandDepth + y, world) === 'sand') {
+  while (getElement({ x, y: sandDepth + y }, world) === 'sand') {
     sandDepth += 1;
   }
 
@@ -245,24 +237,24 @@ export function sandFall(world: World) {
   world.fallingSands.forEach((fallingSand, index) => {
     const x = fallingSand.x;
     const y = fallingSand.y;
-    if (y + 1 >= world.height) {
+    if (!isWithinBounds({ x, y: y + 1 }, world)) {
       /* Hit bottom - done falling and no compaction possible. */
       fallenSandIndices.push(index);
       return;
     }
 
     /* Drop the sand onto the next lower sand or dirt. */
-    if (getElement(x, y + 1, world) === 'air') {
+    if (getElement({ x, y: y + 1 }, world) === 'air') {
       fallingSand.y = y + 1;
       world.elements[y][x] = 'air' as const;
       world.elements[fallingSand.y][fallingSand.x] = 'sand' as const;
-      loosenNeighbors(x, y, world);
+      loosenNeighbors({ x, y }, world);
       return;
     }
 
     /* Tip over an edge? */
-    let tipLeft = getElement(x - 1, y, world) === 'air' && getElement(x - 1, y + 1, world) === 'air' && getElement(x - 1, y + 2, world) === 'air';
-    let tipRight = getElement(x + 1, y, world) === 'air' && getElement(x + 1, y + 1, world) === 'air' && getElement(x + 1, y + 2, world) === 'air';
+    let tipLeft = getElement({ x: x - 1, y }, world) === 'air' && getElement({ x: x - 1, y: y + 1 }, world) === 'air' && getElement({ x: x - 1, y: y + 2 }, world) === 'air';
+    let tipRight = getElement({ x: x + 1, y }, world) === 'air' && getElement({ x: x + 1, y: y + 1 }, world) === 'air' && getElement({ x: x + 1, y: y + 2 }, world) === 'air';
     if (tipLeft || tipRight) {
       if (tipLeft && tipRight) {
         if (Math.random() < 0.5) {
@@ -277,7 +269,7 @@ export function sandFall(world: World) {
       world.elements[y][x] = 'air';
       world.elements[fallingSand.y][fallingSand.x] = 'sand';
       // TODO: This is mutating the fallingSands array as it's being iterated over which seems confusing and/or not implicitly understood
-      loosenNeighbors(x, y, world);
+      loosenNeighbors({ x, y }, world);
       return;
     }
 

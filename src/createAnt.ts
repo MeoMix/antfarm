@@ -1,3 +1,5 @@
+import type { Point } from './Point';
+
 export type Behavior = 'wandering' | 'carrying';
 export type Facing = 'left' | 'right';
 
@@ -16,8 +18,7 @@ export const getRotatedAngle = (angle: Angle, rotation: number): Angle => {
 };
 
 export type Ant = {
-  x: number;
-  y: number;
+  location: Point;
   behavior: Behavior;
   facing: Facing,
   angle: Angle,
@@ -33,8 +34,7 @@ export const getTimer = (behavior: Behavior) => BehaviorTimingFactors[behavior] 
 
 function createAnt(x: number, y: number, behavior: Behavior, facing: Facing, angle: Angle): Ant {
   return {
-    x,
-    y,
+    location: { x, y },
     behavior,
     facing,
     angle,

@@ -15,6 +15,7 @@ type Props = {
   surfaceLevel: number;
 }
 
+// TODO: If everything is multiplied by gridSize in here - does that mean I can apply gridSize at a higher level to scale everything instead?
 function World({ elements, ants, gridSize, surfaceLevel }: Props) {
   return (
     <>
@@ -41,8 +42,8 @@ function World({ elements, ants, gridSize, surfaceLevel }: Props) {
       {
         ants.map(ant => (
           <Ant
-            x={ant.x * gridSize}
-            y={ant.y * gridSize}
+            x={ant.location.x * gridSize}
+            y={ant.location.y * gridSize}
             width={gridSize}
             facing={ant.facing}
             angle={ant.angle}
