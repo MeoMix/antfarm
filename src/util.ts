@@ -16,12 +16,17 @@ function getDelta(facing: Facing, angle: Angle) {
   return { x: 0, y: angle === 90 ? -1 : 1 };
 }
 
+/** Returns the type of element at a given position in the world or undefined if out of bounds */
+function getElement(x: number, y: number, { width, height, elements }: World) {
+  return (x < 0 || x >= width || y < 0 || y >= height) ? undefined : elements[y][x];
+}
+
 function isLegalDirection(ant: Readonly<Ant>, facing: Facing, angle: Angle, world: World) {
   // Check that there is air ahead
   const delta = getDelta(facing, angle);
   const newX = ant.x + delta.x;
   const newY = ant.y + delta.y;
-  if (newX < 0 || newX >= world.width || newY < 0 || newY >= world.height || world.elements[newY][newX] !== 'air') {
+  if (getElement(newX, newY, world) !== 'air') {
     return false;
   }
 
@@ -29,7 +34,7 @@ function isLegalDirection(ant: Readonly<Ant>, facing: Facing, angle: Angle, worl
   const footDelta = getDelta(facing, getRotatedAngle(angle, 1));
   const footNewX = ant.x + footDelta.x;
   const footNewY = ant.y + footDelta.y;
-  if (footNewX >= 0 && footNewX < world.width && footNewY >= 0 && footNewY < world.height && world.elements[footNewY][footNewX] === 'air') {
+  if (getElement(footNewX, footNewY, world) === 'air') {
     return false;
   }
 
@@ -48,10 +53,10 @@ function move(ant: Readonly<Ant>, world: World) {
   }
 
   // Check if hitting dirt or sand and, if so, dig.
-  if (world.elements[newY][newX] !== 'air') {
+  if (getElement(newX, newY, world) !== 'air') {
     /* Hit dirt or sand.  Dig? */
     // If ant is wandering *below ground level* and bumps into sand or has a chance to dig, dig.
-    if (ant.behavior === 'wandering' && ant.y > world.surfaceLevel && (world.elements[newY][newX] === 'sand' || Math.random() < config.probabilities.concaveBelowDirtDig)) {
+    if (ant.behavior === 'wandering' && ant.y > world.surfaceLevel && (getElement(newX, newY, world) === 'sand' || Math.random() < config.probabilities.concaveBelowDirtDig)) {
       /* Yes, try digging. */
       return dig(ant, true, world);
     } else {
@@ -67,7 +72,7 @@ function move(ant: Readonly<Ant>, world: World) {
   const fx = newX + footDelta.x;
   const fy = newY + footDelta.y;
 
-  if (fx >= 0 && fx < world.width && fy >= 0 && fy < world.height && world.elements[fy][fx] === 'air') {
+  if (getElement(fx, fy, world) === 'air') {
     /* Whoops, we're over air.  Move into the air and turn towards the feet.  But first, see if we should drop. */
     let updatedAnt = ant;
     if (ant.behavior === 'carrying' && ant.y <= world.surfaceLevel && Math.random() < config.probabilities.convexAboveDirtDrop) {
@@ -86,7 +91,7 @@ function dig(ant: Readonly<Ant>, isForcedForward: boolean, world: World) {
   const x = ant.x + delta.x;
   const y = ant.y + delta.y;
 
-  if (x >= 0 && x < world.width && y >= 0 && y < world.height && world.elements[y][x] !== 'air') {
+  if (getElement(x, y, world) !== 'air') {
     world.elements[y][x] = 'air';
     loosenNeighbors(x, y, world);
 
@@ -129,7 +134,7 @@ function turn(ant: Readonly<Ant>, world: World) {
 
   // No legal direction? Trapped! Drop sand and turn randomly in an attempt to dig out.
   let trappedAnt = ant;
-  if (ant.behavior === 'carrying' && world.elements[ant.y][ant.x] === 'air') {
+  if (ant.behavior === 'carrying' && getElement(ant.x, ant.y, world) === 'air') {
     trappedAnt = drop(ant, world);
   }
   const randomDirection = facingAngles[Math.floor(Math.random() * facingAngles.length)];
@@ -171,9 +176,9 @@ export function moveAnts(world: World) {
     const fx = movingAnt.x + footDelta.x;
     const fy = movingAnt.y + footDelta.y;
 
-    if (fx >= 0 && fx < world.width && fy >= 0 && fy < world.height && world.elements[fy][fx] === 'air') {
+    if (getElement(fx, fy, world) === 'air') {
       /* Whoops, whatever we were walking on disappeared. */
-      if (movingAnt.y + 1 < world.height && world.elements[movingAnt.y + 1][movingAnt.x] === 'air') {
+      if (getElement(movingAnt.x, movingAnt.y + 1, world) === 'air') {
         return { ...movingAnt, y: movingAnt.y + 1};
       } else {
         /* Can't fall?  Try turning. */
@@ -206,7 +211,7 @@ export function moveAnts(world: World) {
 function loosenNeighbors(xc: number, yc: number, world: World) {
   for (let y = yc + 2; y >= yc - 2; --y) {
     for (let x = xc - 2; x <= xc + 2; ++x) {
-      if ((x !== xc || y !== yc) && x >= 0 && x < world.width && y >= 0 && y < world.height && world.elements[y][x] === 'sand') {
+      if ((x !== xc || y !== yc) && getElement(x, y, world) === 'sand') {
         loosenOne(x, y, world);
       }
     }
@@ -225,7 +230,7 @@ function loosenNeighbors(xc: number, yc: number, world: World) {
 function getSandDepth(x: number, y: number, world: World) {
   let sandDepth = 0;
 
-  while (sandDepth + y < world.height && world.elements[sandDepth + y][x] === 'sand') {
+  while (getElement(x, sandDepth + y, world) === 'sand') {
     sandDepth += 1;
   }
 
@@ -247,7 +252,7 @@ export function sandFall(world: World) {
     }
 
     /* Drop the sand onto the next lower sand or dirt. */
-    if (world.elements[y + 1][x] === 'air') {
+    if (getElement(x, y + 1, world) === 'air') {
       fallingSand.y = y + 1;
       world.elements[y][x] = 'air' as const;
       world.elements[fallingSand.y][fallingSand.x] = 'sand' as const;
@@ -256,8 +261,8 @@ export function sandFall(world: World) {
     }
 
     /* Tip over an edge? */
-    let tipLeft = (x - 1 >= 0 && y + 2 < world.height && world.elements[y][x - 1] === 'air' && world.elements[y + 1][x - 1] === 'air' && world.elements[y + 2][x - 1] === 'air');
-    let tipRight = (x + 1 < world.width && y + 2 < world.height && world.elements[y][x + 1] === 'air' && world.elements[y + 1][x + 1] === 'air' && world.elements[y + 2][x + 1] === 'air');
+    let tipLeft = getElement(x - 1, y, world) === 'air' && getElement(x - 1, y + 1, world) === 'air' && getElement(x - 1, y + 2, world) === 'air';
+    let tipRight = getElement(x + 1, y, world) === 'air' && getElement(x + 1, y + 1, world) === 'air' && getElement(x + 1, y + 2, world) === 'air';
     if (tipLeft || tipRight) {
       if (tipLeft && tipRight) {
         if (Math.random() < 0.5) {
