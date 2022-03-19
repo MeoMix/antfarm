@@ -18,11 +18,14 @@ export const getRotatedAngle = (angle: Angle, rotation: number): Angle => {
 };
 
 export type Ant = {
+  // The location of the ants head - need to consider location + facing + width to determine body (assuming height: 1)
   location: Point;
   behavior: Behavior;
   facing: Facing,
   angle: Angle,
   timer: number;
+  width: number;
+  height: number;
 }
 
 const BehaviorTimingFactors = {
@@ -39,6 +42,8 @@ function createAnt(x: number, y: number, behavior: Behavior, facing: Facing, ang
     facing,
     angle,
     timer: getTimer(behavior),
+    width: 1,
+    height: 1,
   };
 }
 

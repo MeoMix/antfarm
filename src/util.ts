@@ -1,7 +1,7 @@
 import { Ant, getRotatedAngle } from './createAnt';
 import config from './config';
 import { getTimer } from './createAnt';
-import { add as addPoint } from './Point';
+import { add as addPoint, subtract as subtractPoint } from './Point';
 import type { Point } from './Point';
 import type { Facing, Angle } from './createAnt';
 import type { World  } from './createWorld';
@@ -28,16 +28,34 @@ function getElement(location: Point, world: World) {
   return isWithinBounds(location, world) ? world.elements[location.y][location.x] : undefined;
 }
 
-// TODO: This function is a little weird because it's handling two distinct concepts - going forward or going down.
-/** Returns false if the location in front of a given ant isn't air or if the location underneath the ant is air */
-function isLegalDirection(ant: Readonly<Ant>, facing: Facing, angle: Angle, world: World) {
-  // Check that there is air ahead
-  if (getElement(addPoint(ant.location, getDelta(facing, angle)), world) !== 'air') {
+/** Returns true if ant can be in the given location by confirming it exists within air tiles and has solid footing and */
+function isValidLocation(ant: Readonly<Ant>, world: World) {
+  // TODO: The original logic looked one ahead of the ant as well - is this worth considering?
+  const antLocations = Array.from({ length: ant.width }, (_, index) => {
+    // Move along the length of the ants body, starting from its head
+    let location = ant.location;
+    for (let i = 0; i < index; i++) {
+      location = subtractPoint(location, getDelta(ant.facing, ant.angle));
+    }
+
+    return location;
+  });
+
+  // Need completely air along the ants' body for it to be a legal ant location.
+  const antLocationElements = antLocations.map(antLocation => getElement(antLocation, world));
+  if (antLocationElements.some(element => element !== 'air')) {
     return false;
   }
 
-  // Check that there is solid footing
-  if (getElement(addPoint(ant.location, getDelta(facing, getRotatedAngle(angle, 1))), world) === 'air') {
+  // Check that there is some solid footing along the length of the ant
+  const footLocations = antLocations.map(antLocation => {
+    // Get the location beneath the ants feet at the given location along its body
+    return addPoint(antLocation, getDelta(ant.facing, getRotatedAngle(ant.angle, 1)));
+  });
+
+  // If everything below the ant is air then it's not a legal location.
+  const footLocationElements = footLocations.map(footLocation => getElement(footLocation, world));
+  if (footLocationElements.every(element => element === 'air')) {
     return false;
   }
 
@@ -96,12 +114,12 @@ function dig(ant: Readonly<Ant>, isForcedForward: boolean, world: World) {
 function turn(ant: Readonly<Ant>, world: World) {
   // First try turning perpendicularly towards the ant's back. If that fails, try turning around.
   const backAngle = getRotatedAngle(ant.angle, -1);
-  if (isLegalDirection(ant, ant.facing, backAngle, world)){
+  if (isValidLocation({ ...ant, angle: backAngle }, world)){
     return { ...ant, angle: backAngle };
   }
 
   const turnAroundAngle = getRotatedAngle(ant.angle, -2);
-  if (isLegalDirection(ant, ant.facing, turnAroundAngle, world)) {
+  if (isValidLocation({ ...ant, angle: turnAroundAngle }, world)) {
     return { ...ant, angle: turnAroundAngle };
   }
 
@@ -118,9 +136,9 @@ function turn(ant: Readonly<Ant>, world: World) {
     { facing: 'right' as const, angle: 270 as const },
   ];
 
-  const okDirections = facingAngles.filter(({ facing, angle }) => (facing !== ant.facing || angle !== ant.angle) && isLegalDirection(ant, facing, angle, world));
-  if (okDirections.length > 0) {
-    const okDirection = okDirections[Math.floor(Math.random() * okDirections.length)];
+  const validFacingAngles = facingAngles.filter(({ facing, angle }) => (facing !== ant.facing || angle !== ant.angle) && isValidLocation({ ...ant, facing, angle }, world));
+  if (validFacingAngles.length > 0) {
+    const okDirection = validFacingAngles[Math.floor(Math.random() * validFacingAngles.length)];
     return { ...ant, facing: okDirection.facing, angle: okDirection.angle };
   }
 
@@ -129,9 +147,9 @@ function turn(ant: Readonly<Ant>, world: World) {
   if (ant.behavior === 'carrying' && getElement(ant.location, world) === 'air') {
     trappedAnt = drop(ant, world);
   }
-  const randomDirection = facingAngles[Math.floor(Math.random() * facingAngles.length)];
+  const randomFacingAngle = facingAngles[Math.floor(Math.random() * facingAngles.length)];
 
-  return { ...trappedAnt, facing: randomDirection.facing, angle: randomDirection.angle }
+  return { ...trappedAnt, facing: randomFacingAngle.facing, angle: randomFacingAngle.angle }
 }
 
 function wander(ant: Readonly<Ant>, world: World) {
@@ -155,14 +173,12 @@ export function moveAnts(world: World) {
   return world.ants.map(ant => {
     const movingAnt = { ...ant, timer: ant.timer - 1 };
 
+    // NOTE: timer only resets when behavior changes, timer can (unintuitively) be negative which is valid
     if (movingAnt.timer > 0) {
       return movingAnt;
     }
 
-    if (movingAnt.timer < 0) {
-      console.error('ant timer below 0 - broken state');
-    }
-
+    // TODO: I think it's weird gravity check doesn't apply until timer is up.
     /* Gravity check. */
     const footDelta = getDelta(movingAnt.facing, getRotatedAngle(movingAnt.angle, 1));
     const f = addPoint(movingAnt.location, footDelta);
@@ -171,7 +187,7 @@ export function moveAnts(world: World) {
       /* Whoops, whatever we were walking on disappeared. */
       const fallPoint = addPoint(movingAnt.location, { x: 0, y: 1 });
       if (getElement(fallPoint, world) === 'air') {
-        return { ...movingAnt, location: fallPoint};
+        return { ...movingAnt, location: fallPoint };
       } else {
         /* Can't fall?  Try turning. */
         return turn(movingAnt, world);

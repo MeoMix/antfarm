@@ -26,11 +26,11 @@ function World({ elements, ants, surfaceLevel }: Props) {
           const elementProps = { x, y, width: 1, height: 1 };
 
           if (element === 'dirt') {
-            return <Dirt {...elementProps} />;
+            return <Dirt key={`${x}${y}`} {...elementProps} />;
           }
 
           if (element === 'sand') {
-            return <Sand {...elementProps} />;
+            return <Sand key={`${x}${y}`} {...elementProps} />;
           }
 
           return null;
@@ -38,11 +38,12 @@ function World({ elements, ants, surfaceLevel }: Props) {
       }
 
       {
-        ants.map(ant => (
+        ants.map((ant, index) => (
           <Ant
+            key={`ant-${index}`}
             x={ant.location.x}
             y={ant.location.y}
-            width={1}
+            width={ant.width}
             facing={ant.facing}
             angle={ant.angle}
           />
