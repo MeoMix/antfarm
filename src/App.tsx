@@ -9,6 +9,8 @@ import config from './config';
 import { moveAnts, sandFall } from './util';
 import SettingsDialog from './components/SettingsDialog';
 
+const VERSION = '0.0.1';
+
 // 16:9 aspect ratio to favor widescreen monitors, letterboxing will occur on all other sizes.
 const WORLD_WIDTH = 96 * 1.5;
 const WORLD_HEIGHT = 54 * 1.5;
@@ -24,9 +26,9 @@ function App() {
 
   const [world, setWorld] = useState(() => {
     const savedWorldJson = localStorage.getItem('antfarm-world');
-    const savedWorld = savedWorldJson ? JSON.parse(savedWorldJson) as ReturnType<typeof createWorld> : null;
+    const savedWorld = savedWorldJson ? JSON.parse(savedWorldJson) as (ReturnType<typeof createWorld> & { version: string }) : null;
 
-    return savedWorld ?? createNewWorld();
+    return savedWorld && savedWorld.version === VERSION ? savedWorld : createNewWorld();
   });
 
   useEffect(() => {
@@ -110,7 +112,7 @@ function App() {
   // but world is updated a lot and it's no good if a stale world is saved
   useEffect(() => {
     function saveWorld() {
-      localStorage.setItem('antfarm-world', JSON.stringify(world));
+      localStorage.setItem('antfarm-world', JSON.stringify({ ...world, version: VERSION }));
     }
 
     function onWindowUnload() {
