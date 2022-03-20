@@ -142,6 +142,7 @@ function App() {
   function handleDeleteSave() {
     localStorage.removeItem('antfarm-world');
     setWorld(createNewWorld());
+    setIsSettingsDialogOpen(false);
   }
 
   return (
