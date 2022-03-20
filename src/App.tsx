@@ -31,9 +31,10 @@ function App() {
     return savedWorld && savedWorld.version === VERSION ? savedWorld : createNewWorld();
   });
 
+  // Ensure the main canvas fills as much of the browser's available space as possible and handle resizing.
   useEffect(() => {
     function getScale() {
-      const width =  stageBoxRef.current?.offsetWidth ?? 0;
+      const width = stageBoxRef.current?.offsetWidth ?? 0;
       const height = stageBoxRef.current?.offsetHeight ?? 0;
       return Math.min(width / WORLD_WIDTH, height / WORLD_HEIGHT);
     }
@@ -51,62 +52,49 @@ function App() {
     };
   }, []);
 
-  const updateWorld = useCallback((delta: number) => {
-    const elapsedTicks = Math.floor(delta / config.tickRateMs);
-    if (elapsedTicks === 0) {
-      return;
-    }
-    
-    setWorld(world => {
-      // TODO: Pretty sure I want to break references to world entirely here, but it's too expensive to call JSON.parse(JSON.stringify(world))
-      // I think I need to rewrite utils to treat world as immutable instead?
-      let updatedWorld = JSON.parse(JSON.stringify(world));
-      for (let tickCount = 0; tickCount < elapsedTicks; tickCount++) {
-        updatedWorld.ants = moveAnts(updatedWorld);
-        sandFall(updatedWorld);
-      }
-
-      return updatedWorld;
-    });
-  }, []);
-
+  // Main loop for updating world state. Try to run every N ms (configurable), play catch-up if multiple
+  // ticks are pending. This can occur in various scenarios. For example, if configured tick rate is very low,
+  // or if browser tab is inactive then setInterval will slow to once-per-second.
   useEffect(() => {
-    let animationFrameId = 0;
-    let lastVisibleTimeMs = 0;
+    let intervalId = 0;
     let lastWorldUpdateTimeMs = 0;
 
-    function handleAnimationFrame(timestamp: number) {
+    function updateWorld(deltaMs: number) {
+      const elapsedTicks = Math.floor(deltaMs / config.tickRateMs);
+      if (elapsedTicks === 0) {
+        return;
+      }
+      
+      // TODO: The async nature of this callback might be a problem. I'm not aware of any existing bugs, but
+      // when tick speed is very frequent it seems like subsequent calls can use previous world state. Could mitigate this
+      // by storing a ref to the world and relying on that?
+      setWorld(world => {
+        // TODO: Prefer immutable world instead of breaking world reference (it's too expensive)
+        let updatedWorld = JSON.parse(JSON.stringify(world));
+        for (let tickCount = 0; tickCount < elapsedTicks; tickCount++) {
+          updatedWorld.ants = moveAnts(updatedWorld);
+          sandFall(updatedWorld);
+        }
+  
+        return updatedWorld;
+      });
+    }
+
+    function handleInterval() {
+      const timestamp = performance.now();
       const delta = timestamp - lastWorldUpdateTimeMs;
       if (delta > config.tickRateMs) {
         lastWorldUpdateTimeMs = timestamp;
         updateWorld(delta);
       }
-
-      animationFrameId = window.requestAnimationFrame(handleAnimationFrame);
     }
 
-    function handleVisibilityChange() {
-      if (document.hidden) {
-        window.cancelAnimationFrame(animationFrameId);
-        lastVisibleTimeMs = performance.now();
-      } else {
-        // It's important to set lastTickTime
-        lastWorldUpdateTimeMs = performance.now();
-        const delta = lastWorldUpdateTimeMs - lastVisibleTimeMs;
-        updateWorld(delta);
-
-        animationFrameId = window.requestAnimationFrame(handleAnimationFrame);
-      }
-    }
-
-    animationFrameId = window.requestAnimationFrame(handleAnimationFrame);
-    document.addEventListener('visibilitychange', handleVisibilityChange, true);
+    intervalId = window.setInterval(handleInterval, 60 / 1000);
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange, true);
-      window.cancelAnimationFrame(animationFrameId);
+      window.clearInterval(intervalId);
     }
-  }, [updateWorld]);
+  }, []);
 
   // TODO: idk how to write this properly just yet. it's wrong that setInterval would get set/cleared frequently,
   // but world is updated a lot and it's no good if a stale world is saved
@@ -147,12 +135,12 @@ function App() {
 
   return (
     <div className="App">
-      <AppBar position="static">
+      <AppBar color="transparent" elevation={0}>
         <Toolbar variant="dense">
-          <Typography sx={{ flexGrow: 1 }}>
+          <Typography sx={{ flexGrow: 1 }} color="primary">
             Ant Farm
           </Typography>
-          <IconButton onClick={handleSettingsClick} color="inherit">
+          <IconButton onClick={handleSettingsClick}>
             <SettingsIcon />
           </IconButton>
         </Toolbar>
