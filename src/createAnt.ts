@@ -24,8 +24,6 @@ export type Ant = {
   facing: Facing,
   angle: Angle,
   timer: number;
-  width: number;
-  height: number;
 }
 
 const BehaviorTimingFactors = {
@@ -42,8 +40,6 @@ function createAnt(x: number, y: number, behavior: Behavior, facing: Facing, ang
     facing,
     angle,
     timer: getTimer(behavior),
-    width: 1,
-    height: 1,
   };
 }
 

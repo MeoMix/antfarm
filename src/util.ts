@@ -1,11 +1,24 @@
 import { Ant, getRotatedAngle } from './createAnt';
 import config from './config';
 import { getTimer } from './createAnt';
-import { add as addPoint, subtract as subtractPoint } from './Point';
+import { add as addPoint } from './Point';
 import type { Point } from './Point';
 import type { Facing, Angle } from './createAnt';
 import type { World  } from './createWorld';
 
+const facingAngles = [
+  { facing: 'left' as const, angle: 0 as const },
+  { facing: 'left' as const, angle: 90 as const },
+  { facing: 'left' as const, angle: 180 as const },
+  { facing: 'left' as const, angle: 270 as const },
+
+  { facing: 'right' as const, angle: 0 as const  },
+  { facing: 'right' as const, angle: 90 as const },
+  { facing: 'right' as const, angle: 180 as const },
+  { facing: 'right' as const, angle: 270 as const },
+];
+
+// TODO: getDelta should probably not be coupled to 'facing'?
 function getDelta(facing: Facing, angle: Angle): Point {
   if (angle === 0 || angle === 180) {
     if (facing === 'right') {
@@ -28,34 +41,18 @@ function getElement(location: Point, world: World) {
   return isWithinBounds(location, world) ? world.elements[location.y][location.x] : undefined;
 }
 
-/** Returns true if ant can be in the given location by confirming it exists within air tiles and has solid footing and */
+/** Returns true if ant can be in the given location by confirming it exists within air and has solid footing */
 function isValidLocation(ant: Readonly<Ant>, world: World) {
   // TODO: The original logic looked one ahead of the ant as well - is this worth considering?
-  const antLocations = Array.from({ length: ant.width }, (_, index) => {
-    // Move along the length of the ants body, starting from its head
-    let location = ant.location;
-    for (let i = 0; i < index; i++) {
-      location = subtractPoint(location, getDelta(ant.facing, ant.angle));
-    }
 
-    return location;
-  });
-
-  // Need completely air along the ants' body for it to be a legal ant location.
-  const antLocationElements = antLocations.map(antLocation => getElement(antLocation, world));
-  if (antLocationElements.some(element => element !== 'air')) {
+  // Need air at the ants' body for it to be a legal ant location.
+  if (getElement(ant.location, world) !== 'air') {
     return false;
   }
 
-  // Check that there is some solid footing along the length of the ant
-  const footLocations = antLocations.map(antLocation => {
-    // Get the location beneath the ants feet at the given location along its body
-    return addPoint(antLocation, getDelta(ant.facing, getRotatedAngle(ant.angle, 1)));
-  });
-
-  // If everything below the ant is air then it's not a legal location.
-  const footLocationElements = footLocations.map(footLocation => getElement(footLocation, world));
-  if (footLocationElements.every(element => element === 'air')) {
+  // Get the location beneath the ants' feet and check for air
+  const footLocation = addPoint(ant.location, getDelta(ant.facing, getRotatedAngle(ant.angle, 1)));
+  if (getElement(footLocation, world) === 'air') {
     return false;
   }
 
@@ -124,22 +121,17 @@ function turn(ant: Readonly<Ant>, world: World) {
   }
 
   // Randomly turn in a valid different when unable to simply turn around.
-  const facingAngles = [
-    { facing: 'left' as const, angle: 0 as const },
-    { facing: 'left' as const, angle: 90 as const },
-    { facing: 'left' as const, angle: 180 as const },
-    { facing: 'left' as const, angle: 270 as const },
+  const validFacingAngles = facingAngles.filter(({ facing, angle }) => {
+    if (facing === ant.facing && angle === ant.angle) {
+      return false;
+    }
 
-    { facing: 'right' as const, angle: 0 as const  },
-    { facing: 'right' as const, angle: 90 as const },
-    { facing: 'right' as const, angle: 180 as const },
-    { facing: 'right' as const, angle: 270 as const },
-  ];
+    return isValidLocation({ ...ant, facing, angle }, world);
+  });
 
-  const validFacingAngles = facingAngles.filter(({ facing, angle }) => (facing !== ant.facing || angle !== ant.angle) && isValidLocation({ ...ant, facing, angle }, world));
   if (validFacingAngles.length > 0) {
-    const okDirection = validFacingAngles[Math.floor(Math.random() * validFacingAngles.length)];
-    return { ...ant, facing: okDirection.facing, angle: okDirection.angle };
+    const validFacingAngle = validFacingAngles[Math.floor(Math.random() * validFacingAngles.length)];
+    return { ...ant, ...validFacingAngle };
   }
 
   // No legal direction? Trapped! Drop sand and turn randomly in an attempt to dig out.
@@ -148,7 +140,6 @@ function turn(ant: Readonly<Ant>, world: World) {
     trappedAnt = drop(ant, world);
   }
   const randomFacingAngle = facingAngles[Math.floor(Math.random() * facingAngles.length)];
-
   return { ...trappedAnt, facing: randomFacingAngle.facing, angle: randomFacingAngle.angle }
 }
 
@@ -158,10 +149,15 @@ function wander(ant: Readonly<Ant>, world: World) {
 }
 
 function drop(ant: Readonly<Ant>, world: World) {
-  world.elements[ant.location.y][ant.location.x] = 'sand' as const;
-  loosenOne(ant.location, world);
+  if (getElement(ant.location, world) === 'air') {
+    world.elements[ant.location.y][ant.location.x] = 'sand' as const;
+    loosenOne(ant.location, world);
+  
+    return { ...ant, behavior: 'wandering' as const, timer: getTimer('wandering') };
+  }
 
-  return { ...ant, behavior: 'wandering' as const, timer: getTimer('wandering') };
+  // TODO: Consider moving instead? Same problem as dig where 100% chance means locked in place
+  return ant;
 }
 
 function carry(ant: Readonly<Ant>, world: World) {

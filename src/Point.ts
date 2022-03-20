@@ -6,10 +6,3 @@ export function add(pointA: Readonly<Point>, pointB: Readonly<Point>): Point {
     y: pointA.y + pointB.y,
   };
 }
-
-export function subtract(pointA: Readonly<Point>, pointB: Readonly<Point>): Point {
-  return {
-    x: pointA.x - pointB.x,
-    y: pointA.y - pointB.y,
-  };
-}

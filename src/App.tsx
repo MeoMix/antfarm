@@ -10,8 +10,8 @@ import { moveAnts, sandFall } from './util';
 import SettingsDialog from './components/SettingsDialog';
 
 // 16:9 aspect ratio to favor widescreen monitors, letterboxing will occur on all other sizes.
-const WORLD_WIDTH = 96;
-const WORLD_HEIGHT = 54;
+const WORLD_WIDTH = 96 * 1.5;
+const WORLD_HEIGHT = 54 * 1.5;
 
 function createNewWorld() {
   return createWorld(WORLD_WIDTH, WORLD_HEIGHT, config.initialDirtPercent, config.initialAntCount);
@@ -21,6 +21,13 @@ function App() {
   const [scale, setScale] = useState(0);
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
   const stageBoxRef = useRef<HTMLDivElement>(null);
+
+  const [world, setWorld] = useState(() => {
+    const savedWorldJson = localStorage.getItem('antfarm-world');
+    const savedWorld = savedWorldJson ? JSON.parse(savedWorldJson) as ReturnType<typeof createWorld> : null;
+
+    return savedWorld ?? createNewWorld();
+  });
 
   useEffect(() => {
     function getScale() {
@@ -47,11 +54,11 @@ function App() {
     if (elapsedTicks === 0) {
       return;
     }
-
+    
     setWorld(world => {
       // TODO: Pretty sure I want to break references to world entirely here, but it's too expensive to call JSON.parse(JSON.stringify(world))
       // I think I need to rewrite utils to treat world as immutable instead?
-      let updatedWorld = { ...world };
+      let updatedWorld = JSON.parse(JSON.stringify(world));
       for (let tickCount = 0; tickCount < elapsedTicks; tickCount++) {
         updatedWorld.ants = moveAnts(updatedWorld);
         sandFall(updatedWorld);
@@ -98,13 +105,6 @@ function App() {
       window.cancelAnimationFrame(animationFrameId);
     }
   }, [updateWorld]);
-
-  const [world, setWorld] = useState(() => {
-    const savedWorldJson = localStorage.getItem('antfarm-world');
-    const savedWorld = savedWorldJson ? JSON.parse(savedWorldJson) as ReturnType<typeof createWorld> : null;
-
-    return savedWorld ?? createNewWorld();
-  });
 
   // TODO: idk how to write this properly just yet. it's wrong that setInterval would get set/cleared frequently,
   // but world is updated a lot and it's no good if a stale world is saved
