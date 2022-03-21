@@ -1,5 +1,5 @@
 import './App.css';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Stage, Container } from '@inlet/react-pixi';
 import { AppBar, Box, IconButton, Toolbar, Typography } from '@mui/material';
 import { Settings as SettingsIcon } from '@mui/icons-material';
@@ -26,9 +26,14 @@ function App() {
 
   const [world, setWorld] = useState(() => {
     const savedWorldJson = localStorage.getItem('antfarm-world');
-    const savedWorld = savedWorldJson ? JSON.parse(savedWorldJson) as (ReturnType<typeof createWorld> & { version: string }) : null;
+    const savedWorld = savedWorldJson ? JSON.parse(savedWorldJson) as (ReturnType<typeof createNewWorld> & { version: string }) : null;
+    
+    if (!savedWorld) {
+      return createNewWorld();
+    }
 
-    return savedWorld && savedWorld.version === VERSION ? savedWorld : createNewWorld();
+    const { version, ...world } = savedWorld;
+    return version === VERSION ? world : createNewWorld();
   });
 
   // Ensure the main canvas fills as much of the browser's available space as possible and handle resizing.
@@ -65,9 +70,6 @@ function App() {
         return;
       }
       
-      // TODO: The async nature of this callback might be a problem. I'm not aware of any existing bugs, but
-      // when tick speed is very frequent it seems like subsequent calls can use previous world state. Could mitigate this
-      // by storing a ref to the world and relying on that?
       setWorld(world => {
         // TODO: Prefer immutable world instead of breaking world reference (it's too expensive)
         let updatedWorld = JSON.parse(JSON.stringify(world));

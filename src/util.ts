@@ -228,7 +228,7 @@ function loosenNeighbors(location: Point, world: World) {
     return;
   }
 
-  world.fallingSands.push(location);
+  world.fallingSands.push({ ...location });
 }
 
 function getSandDepth(x: number, y: number, world: World) {
