@@ -1,10 +1,14 @@
 import type { Point } from './Point';
 
 export type Behavior = 'wandering' | 'carrying';
-export type Facing = 'left' | 'right';
+
+export const facings = ['left', 'right'] as const;
+export type Facing = typeof facings[number];
 
 export const angles = [0, 90, 180, 270] as const;
 export type Angle = typeof angles[number];
+
+export const facingAngles = facings.flatMap(facing => angles.map(angle => ({ facing, angle })));
 
 /**
  * Rotation is a value from 0 to 3. A value of 1 is a 90 degree counter-clockwise rotation. Negative values are accepted.

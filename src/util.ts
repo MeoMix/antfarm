@@ -1,22 +1,10 @@
 import { Ant, getRotatedAngle } from './createAnt';
 import config from './config';
-import { getTimer } from './createAnt';
+import { getTimer, facingAngles } from './createAnt';
 import { add as addPoint } from './Point';
 import type { Point } from './Point';
 import type { Facing, Angle } from './createAnt';
 import type { World  } from './createWorld';
-
-const facingAngles = [
-  { facing: 'left' as const, angle: 0 as const },
-  { facing: 'left' as const, angle: 90 as const },
-  { facing: 'left' as const, angle: 180 as const },
-  { facing: 'left' as const, angle: 270 as const },
-
-  { facing: 'right' as const, angle: 0 as const  },
-  { facing: 'right' as const, angle: 90 as const },
-  { facing: 'right' as const, angle: 180 as const },
-  { facing: 'right' as const, angle: 270 as const },
-];
 
 // TODO: getDelta should probably not be coupled to 'facing'?
 function getDelta(facing: Facing, angle: Angle): Point {
@@ -68,26 +56,31 @@ function move(ant: Readonly<Ant>, world: World) {
     return turn(ant, world);
   }
 
-  // Check if hitting dirt or sand and, if so, dig.
+  // Check if hitting dirt or sand and, if so, consider digging through it.
   const element = getElement(newPoint, world);
   if (element === 'dirt' || element === 'sand') {
     // If ant is wandering *below ground level* and bumps into sand or has a chance to dig, dig.
-    if (ant.behavior === 'wandering' && ant.location.y > world.surfaceLevel && (getElement(newPoint, world) === 'sand' || Math.random() < config.probabilities.concaveBelowDirtDig)) {
+    if (ant.behavior === 'wandering' && ant.location.y > world.surfaceLevel && (element === 'sand' || Math.random() < config.probabilities.concaveBelowDirtDig)) {
       return dig(ant, true, world);
     } else {
       return turn(ant, world);
     }
   }
 
-  // TODO: This bit reads a little odd. I would think gravity would handle this scenario
   /* We can move forward.  But first, check footing. */
   const footAngle = getRotatedAngle(ant.angle, 1);
   const footPoint = addPoint(newPoint, getDelta(ant.facing, footAngle));
   if (getElement(footPoint, world) === 'air') {
-    /* Whoops, we're over air.  Move into the air and turn towards the feet.  But first, see if we should drop. */
-    const shouldDropDirt = ant.behavior === 'carrying' && ant.location.y <= world.surfaceLevel && Math.random() < config.probabilities.convexAboveDirtDrop;
-    const updatedAnt = shouldDropDirt ? drop(ant, world) : ant;
-    return { ...updatedAnt, location: footPoint, angle: footAngle };
+    // If ant moves straight forward, it will be standing over air. Instead, turn into the air and remain standing on current block
+    // Ant will try to fill the gap with sand if possible.
+    const shouldDropSand = ant.behavior === 'carrying' && ant.location.y <= world.surfaceLevel && Math.random() < config.probabilities.convexAboveDirtDrop;
+    
+    // If dropping sand into gap then just do that for now, next tick can decide to walk onto it
+    if (shouldDropSand) {
+      return drop(ant, world);
+    } else {
+      return { ...ant, location: footPoint, angle: footAngle };
+    }
   }
 
   return { ...ant, location: newPoint };
