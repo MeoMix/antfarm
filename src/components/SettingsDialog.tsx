@@ -31,9 +31,9 @@ function SettingsDialog({ open, onClose, onResetWorld, onResetSettings, onSettin
                 fullWidth
                 label="Initial Ant Count"
                 type="number"
-                InputProps={{ inputProps: { min: 1 }}}
+                InputProps={{ inputProps: { min: 1, max: 1000, step: 1 }}}
                 value={settings.initialAntCount}
-                onChange={({ target: { value }}) => onSettingsChange({ ...settings, initialAntCount: Number(value) })}
+                onChange={({ target: { value }}) => onSettingsChange({ ...settings, initialAntCount: Math.round(Number(value)) })}
               />
             </Grid>
             <Grid item xs={12}>
@@ -54,7 +54,7 @@ function SettingsDialog({ open, onClose, onResetWorld, onResetSettings, onSettin
               type="number"
               InputProps={{ inputProps: { min: 1 }}}
               value={settings.tickRateMs}
-              onChange={({ target: { value }}) => onSettingsChange({ ...settings, tickRateMs: Number(value) })}
+              onChange={({ target: { value }}) => onSettingsChange({ ...settings, tickRateMs: Math.round(Number(value)) })}
             />
           </Grid>
           <Grid item xs={12}>
@@ -64,7 +64,7 @@ function SettingsDialog({ open, onClose, onResetWorld, onResetSettings, onSettin
               type="number"
               InputProps={{ inputProps: { min: 1 }}}
               value={settings.compactSandDepth}
-              onChange={({ target: { value }}) => onSettingsChange({ ...settings, compactSandDepth: Number(value) })}
+              onChange={({ target: { value }}) => onSettingsChange({ ...settings, compactSandDepth: Math.round(Number(value)) })}
             />
           </Grid>
           <Grid item xs={12}>
