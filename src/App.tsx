@@ -8,7 +8,7 @@ import { moveAnts, sandFall } from './util';
 import SettingsDialog from './components/SettingsDialog';
 import WorldContainer from './components/WorldContainer';
 
-const VERSION = '0.0.1';
+const VERSION = '0.0.2';
 
 // 16:9 aspect ratio to favor widescreen monitors, letterboxing will occur on all other sizes.
 const WORLD_WIDTH = 96 * 1.5;

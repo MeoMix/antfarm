@@ -33,7 +33,7 @@ function SettingsDialog({ open, onClose, onResetWorld, onResetSettings, onSettin
                 type="number"
                 InputProps={{ inputProps: { min: 1, max: 1000, step: 1 }}}
                 value={settings.initialAntCount}
-                onChange={({ target: { value }}) => onSettingsChange({ ...settings, initialAntCount: Math.round(Number(value)) })}
+                onChange={({ target: { value }}) => onSettingsChange({ ...settings, initialAntCount: Math.max(Math.round(Number(value)), 1) })}
               />
             </Grid>
             <Grid item xs={12}>
@@ -43,7 +43,7 @@ function SettingsDialog({ open, onClose, onResetWorld, onResetSettings, onSettin
                 type="number"
                 InputProps={{ inputProps: { min: 0, max: 1, step: 0.1 }}}
                 value={settings.initialDirtPercent}
-                onChange={({ target: { value }}) => onSettingsChange({ ...settings, initialDirtPercent: Number(value) })}
+                onChange={({ target: { value }}) => onSettingsChange({ ...settings, initialDirtPercent: Math.max(Number(value), 0) })}
               />
             </Grid>
           </Grid>
@@ -54,7 +54,7 @@ function SettingsDialog({ open, onClose, onResetWorld, onResetSettings, onSettin
               type="number"
               InputProps={{ inputProps: { min: 1 }}}
               value={settings.tickRateMs}
-              onChange={({ target: { value }}) => onSettingsChange({ ...settings, tickRateMs: Math.round(Number(value)) })}
+              onChange={({ target: { value }}) => onSettingsChange({ ...settings, tickRateMs: Math.max(Math.round(Number(value)), 1) })}
             />
           </Grid>
           <Grid item xs={12}>
@@ -64,7 +64,7 @@ function SettingsDialog({ open, onClose, onResetWorld, onResetSettings, onSettin
               type="number"
               InputProps={{ inputProps: { min: 1 }}}
               value={settings.compactSandDepth}
-              onChange={({ target: { value }}) => onSettingsChange({ ...settings, compactSandDepth: Math.round(Number(value)) })}
+              onChange={({ target: { value }}) => onSettingsChange({ ...settings, compactSandDepth: Math.max(Math.round(Number(value)), 1) })}
             />
           </Grid>
           <Grid item xs={12}>
@@ -84,7 +84,7 @@ function SettingsDialog({ open, onClose, onResetWorld, onResetSettings, onSettin
               type="number"
               value={settings.probabilities.randomDig}
               InputProps={{ inputProps: { min: 0, max: 1, step: 0.001 }}}
-              onChange={({ target: { value }}) => onSettingsChange({ ...settings, probabilities: { ...settings.probabilities, randomDig: Number(value) } })}
+              onChange={({ target: { value }}) => onSettingsChange({ ...settings, probabilities: { ...settings.probabilities, randomDig: Math.max(Number(value), 0) } })}
             />
           </Grid>
           <Grid item xs={12}>
@@ -94,7 +94,7 @@ function SettingsDialog({ open, onClose, onResetWorld, onResetSettings, onSettin
               type="number"
               value={settings.probabilities.randomDrop}
               InputProps={{ inputProps: { min: 0, max: 1, step: 0.001 }}}
-              onChange={({ target: { value }}) => onSettingsChange({ ...settings, probabilities: { ...settings.probabilities, randomDrop: Number(value) } })}
+              onChange={({ target: { value }}) => onSettingsChange({ ...settings, probabilities: { ...settings.probabilities, randomDrop: Math.max(Number(value), 0) } })}
             />
           </Grid>
           <Grid item xs={12}>
@@ -104,7 +104,7 @@ function SettingsDialog({ open, onClose, onResetWorld, onResetSettings, onSettin
               type="number"
               value={settings.probabilities.randomTurn}
               InputProps={{ inputProps: { min: 0, max: 1, step: 0.001 }}}
-              onChange={({ target: { value }}) => onSettingsChange({ ...settings, probabilities: { ...settings.probabilities, randomTurn: Number(value) } })}
+              onChange={({ target: { value }}) => onSettingsChange({ ...settings, probabilities: { ...settings.probabilities, randomTurn: Math.max(Number(value), 0) } })}
             />
           </Grid>
           <Grid item xs={12}>
@@ -114,7 +114,7 @@ function SettingsDialog({ open, onClose, onResetWorld, onResetSettings, onSettin
               type="number"
               value={settings.probabilities.belowSurfaceDig}
               InputProps={{ inputProps: { min: 0, max: 1, step: 0.1 }}}
-              onChange={({ target: { value }}) => onSettingsChange({ ...settings, probabilities: { ...settings.probabilities, belowSurfaceDig: Number(value) } })}
+              onChange={({ target: { value }}) => onSettingsChange({ ...settings, probabilities: { ...settings.probabilities, belowSurfaceDig: Math.max(Number(value), 0) } })}
             />
           </Grid>
           <Grid item xs={12}>
@@ -124,7 +124,7 @@ function SettingsDialog({ open, onClose, onResetWorld, onResetSettings, onSettin
               type="number"
               value={settings.probabilities.aboveSurfaceDrop}
               InputProps={{ inputProps: { min: 0, max: 1, step: 0.1 }}}
-              onChange={({ target: { value }}) => onSettingsChange({ ...settings, probabilities: { ...settings.probabilities, aboveSurfaceDrop: Number(value) } })}
+              onChange={({ target: { value }}) => onSettingsChange({ ...settings, probabilities: { ...settings.probabilities, aboveSurfaceDrop: Math.max(Number(value), 0) } })}
             />
           </Grid>
         </Grid>
