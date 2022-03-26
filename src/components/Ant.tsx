@@ -10,9 +10,10 @@ type Props = {
   height: number;
   facing: Facing;
   angle: Angle;
+  color: string;
 }
 
-function Ant({ x, y, width, height, facing, angle }: Props) {
+function Ant({ x, y, width, height, facing, angle, color }: Props) {
   const xFlip = facing === 'right' ? 1 : -1;
   const image = Loader.shared.resources['Ant'].data as HTMLImageElement;
 
@@ -32,6 +33,7 @@ function Ant({ x, y, width, height, facing, angle }: Props) {
       scale={[xFlip * (width / image.width), height / image.height]}
       // TODO: is this a bad architectural decision? technically I am thinking about mirroring improperly by inverting angle when x is flipped?
       angle={-angle * xFlip}
+      tint={parseInt(color.slice(1), 16)}
     />
   )
 }

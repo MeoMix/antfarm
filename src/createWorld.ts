@@ -21,7 +21,7 @@ export type World = {
 }
 
 function createWorld(width: number, height: number, dirtPercent: number, antCount: number): World {
-  const surfaceLevel = height - (height * dirtPercent)
+  const surfaceLevel = Math.floor(height - (height * dirtPercent));
 
   const elements = Array.from({ length: height }, (_, rowIndex) => {
     return Array.from({ length: width }, () => {

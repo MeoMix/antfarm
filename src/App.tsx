@@ -1,13 +1,12 @@
 import './App.css';
-import { useEffect, useRef, useState } from 'react';
-import { Stage, Container } from '@inlet/react-pixi';
-import { AppBar, Box, IconButton, Toolbar, Typography } from '@mui/material';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { AppBar, IconButton, Toolbar, Typography } from '@mui/material';
 import { Settings as SettingsIcon } from '@mui/icons-material';
-import World from './components/World';
 import createWorld from './createWorld';
 import config from './config';
 import { moveAnts, sandFall } from './util';
 import SettingsDialog from './components/SettingsDialog';
+import WorldContainer from './components/WorldContainer';
 
 const VERSION = '0.0.1';
 
@@ -15,14 +14,25 @@ const VERSION = '0.0.1';
 const WORLD_WIDTH = 96 * 1.5;
 const WORLD_HEIGHT = 54 * 1.5;
 
-function createNewWorld() {
-  return createWorld(WORLD_WIDTH, WORLD_HEIGHT, config.initialDirtPercent, config.initialAntCount);
-}
-
 function App() {
-  const [scale, setScale] = useState(0);
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
-  const stageBoxRef = useRef<HTMLDivElement>(null);
+  const lastWorldUpdateTimeMsRef = useRef(0);
+
+  const [settings, setSettings] = useState(() => {
+    const savedSettingsJson = localStorage.getItem('antfarm-settings');
+    const savedSettings = savedSettingsJson ? JSON.parse(savedSettingsJson) as (typeof config & { version: string }) : null;
+    
+    if (!savedSettings) {
+      return config;
+    }
+
+    const { version, ...settings } = savedSettings;
+    return version === VERSION ? settings : config;
+  });
+
+  const createNewWorld = useCallback(() => {
+    return createWorld(WORLD_WIDTH, WORLD_HEIGHT, settings.initialDirtPercent, settings.initialAntCount);
+  }, [settings.initialDirtPercent, settings.initialAntCount])
 
   const [world, setWorld] = useState(() => {
     const savedWorldJson = localStorage.getItem('antfarm-world');
@@ -36,36 +46,14 @@ function App() {
     return version === VERSION ? world : createNewWorld();
   });
 
-  // Ensure the main canvas fills as much of the browser's available space as possible and handle resizing.
-  useEffect(() => {
-    function getScale() {
-      const width = stageBoxRef.current?.offsetWidth ?? 0;
-      const height = stageBoxRef.current?.offsetHeight ?? 0;
-      return Math.min(width / WORLD_WIDTH, height / WORLD_HEIGHT);
-    }
-
-    setScale(getScale())
-
-    function onWindowResize() {
-      setScale(getScale());
-    }
-
-    window.addEventListener('resize', onWindowResize, true);
-
-    return () => {
-      window.removeEventListener('resize', onWindowResize);
-    };
-  }, []);
-
   // Main loop for updating world state. Try to run every N ms (configurable), play catch-up if multiple
   // ticks are pending. This can occur in various scenarios. For example, if configured tick rate is very low,
   // or if browser tab is inactive then setInterval will slow to once-per-second.
   useEffect(() => {
     let intervalId = 0;
-    let lastWorldUpdateTimeMs = 0;
 
     function updateWorld(deltaMs: number) {
-      const elapsedTicks = Math.floor(deltaMs / config.tickRateMs);
+      const elapsedTicks = Math.floor(deltaMs / settings.tickRateMs);
       if (elapsedTicks === 0) {
         return;
       }
@@ -74,8 +62,8 @@ function App() {
         // TODO: Prefer immutable world instead of breaking world reference (it's too expensive)
         let updatedWorld = JSON.parse(JSON.stringify(world));
         for (let tickCount = 0; tickCount < elapsedTicks; tickCount++) {
-          updatedWorld.ants = moveAnts(updatedWorld);
-          sandFall(updatedWorld);
+          updatedWorld.ants = moveAnts(updatedWorld, settings.probabilities);
+          sandFall(updatedWorld, settings.compactSandDepth);
         }
   
         return updatedWorld;
@@ -84,9 +72,9 @@ function App() {
 
     function handleInterval() {
       const timestamp = performance.now();
-      const delta = timestamp - lastWorldUpdateTimeMs;
-      if (delta > config.tickRateMs) {
-        lastWorldUpdateTimeMs = timestamp;
+      const delta = timestamp - lastWorldUpdateTimeMsRef.current;
+      if (delta > settings.tickRateMs) {
+        lastWorldUpdateTimeMsRef.current = timestamp;
         updateWorld(delta);
       }
     }
@@ -96,7 +84,7 @@ function App() {
     return () => {
       window.clearInterval(intervalId);
     }
-  }, []);
+  }, [settings.tickRateMs, settings.compactSandDepth, settings.probabilities]);
 
   // TODO: idk how to write this properly just yet. it's wrong that setInterval would get set/cleared frequently,
   // but world is updated a lot and it's no good if a stale world is saved
@@ -113,13 +101,21 @@ function App() {
 
     const intervalId = window.setInterval(() => {
       saveWorld();
-    }, config.autoSaveIntervalMs);
+    }, settings.autoSaveIntervalMs);
 
     return () => {
       window.removeEventListener('unload', onWindowUnload);
       window.clearInterval(intervalId);
     };
-  }, [world]);
+  }, [world, settings.autoSaveIntervalMs]);
+
+  useEffect(() => {
+    function saveSettings() {
+      localStorage.setItem('antfarm-settings', JSON.stringify({ ...settings, version: VERSION }));
+    }
+
+    saveSettings();
+  }, [settings]);
 
   function handleSettingsClick(){
     setIsSettingsDialogOpen(true);
@@ -129,9 +125,15 @@ function App() {
     setIsSettingsDialogOpen(false);
   }
 
-  function handleDeleteSave() {
+  function handleResetWorld() {
     localStorage.removeItem('antfarm-world');
     setWorld(createNewWorld());
+    setIsSettingsDialogOpen(false);
+  }
+
+  function handleResetSettings() {
+    localStorage.removeItem('antfarm-settings');
+    setSettings(config);
     setIsSettingsDialogOpen(false);
   }
 
@@ -151,24 +153,13 @@ function App() {
       <SettingsDialog
         open={isSettingsDialogOpen}
         onClose={handleSettingsDialogClose}
-        onDeleteSave={handleDeleteSave}
+        onResetWorld={handleResetWorld}
+        onResetSettings={handleResetSettings}
+        onSettingsChange={updatedSettings => setSettings({ ...settings, ...updatedSettings })}
+        settings={settings}
       />
 
-      <Box position="relative" width="100%" flex={1}>
-        <Box position="absolute" width="100%" height="100%" display="flex" justifyContent="center" ref={stageBoxRef} >
-          <Stage
-            width={world.width * scale}
-            height={world.height * scale}
-            options={{
-              resolution: window.devicePixelRatio,
-            }}
-          >
-            <Container scale={scale}>
-              <World elements={world.elements} ants={world.ants} surfaceLevel={world.surfaceLevel} />
-            </Container>
-          </Stage>
-        </Box>
-      </Box>
+      <WorldContainer world={world} antColor={settings.antColor} />
     </div>
   );
 }

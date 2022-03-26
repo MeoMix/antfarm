@@ -12,9 +12,10 @@ type Props = {
   // TODO: Am I thinking about this incorrectly if I have naming conflict between Ant (sprite) and Ant type (model?)
   ants: Readonly<ReturnType<typeof createAnt>[]>;
   surfaceLevel: number;
+  antColor: string;
 }
 
-function World({ elements, ants, surfaceLevel }: Props) {
+function World({ elements, ants, surfaceLevel, antColor }: Props) {
   return (
     <>
       { /* Air/Tunnel are non-interactive and so can be rendered with a single sprite. Dirt/Sand are interactive and so need to be rendered in grid chunks. */ }
@@ -47,6 +48,7 @@ function World({ elements, ants, surfaceLevel }: Props) {
             height={1.2}
             facing={ant.facing}
             angle={ant.angle}
+            color={antColor}
           />
         ))
       }

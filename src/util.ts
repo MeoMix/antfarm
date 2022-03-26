@@ -1,5 +1,5 @@
 import { Ant, getRotatedAngle } from './createAnt';
-import config from './config';
+import type { Settings } from './config';
 import { getTimer, facingAngles } from './createAnt';
 import { add as addPoint } from './Point';
 import type { Point } from './Point';
@@ -47,7 +47,7 @@ function isValidLocation(ant: Readonly<Ant>, world: World) {
   return true;
 }
 
-function move(ant: Readonly<Ant>, world: World) {
+function move(ant: Readonly<Ant>, world: World, probabilities: Settings['probabilities']) {
   const delta = getDelta(ant.facing, ant.angle);
   const newPoint = addPoint(ant.location, delta);
 
@@ -60,7 +60,7 @@ function move(ant: Readonly<Ant>, world: World) {
   const element = getElement(newPoint, world);
   if (element === 'dirt' || element === 'sand') {
     // If ant is wandering *below ground level* and bumps into sand or has a chance to dig, dig.
-    if (ant.behavior === 'wandering' && ant.location.y > world.surfaceLevel && (element === 'sand' || Math.random() < config.probabilities.concaveBelowDirtDig)) {
+    if (ant.behavior === 'wandering' && ant.location.y > world.surfaceLevel && (element === 'sand' || Math.random() < probabilities.belowSurfaceDig)) {
       return dig(ant, true, world);
     } else {
       return turn(ant, world);
@@ -73,7 +73,7 @@ function move(ant: Readonly<Ant>, world: World) {
   if (getElement(footPoint, world) === 'air') {
     // If ant moves straight forward, it will be standing over air. Instead, turn into the air and remain standing on current block
     // Ant will try to fill the gap with sand if possible.
-    const shouldDropSand = ant.behavior === 'carrying' && ant.location.y <= world.surfaceLevel && Math.random() < config.probabilities.convexAboveDirtDrop;
+    const shouldDropSand = ant.behavior === 'carrying' && ant.location.y <= world.surfaceLevel && Math.random() < probabilities.aboveSurfaceDrop;
     
     // If dropping sand into gap then just do that for now, next tick can decide to walk onto it
     if (shouldDropSand) {
@@ -136,9 +136,9 @@ function turn(ant: Readonly<Ant>, world: World) {
   return { ...trappedAnt, facing: randomFacingAngle.facing, angle: randomFacingAngle.angle }
 }
 
-function wander(ant: Readonly<Ant>, world: World) {
+function wander(ant: Readonly<Ant>, world: World, probabilities: Settings['probabilities']) {
   const wanderingAnt = { ...ant, behavior: 'wandering' as const, timer: getTimer('wandering') };
-  return move(wanderingAnt, world);
+  return move(wanderingAnt, world, probabilities);
 }
 
 function drop(ant: Readonly<Ant>, world: World) {
@@ -153,12 +153,12 @@ function drop(ant: Readonly<Ant>, world: World) {
   return ant;
 }
 
-function carry(ant: Readonly<Ant>, world: World) {
+function carry(ant: Readonly<Ant>, world: World, probabilities: Settings['probabilities']) {
   const carryingAnt = { ...ant, behavior: 'carrying' as const, timer: getTimer('carrying') };
-  return move(carryingAnt, world);
+  return move(carryingAnt, world, probabilities);
 }
 
-export function moveAnts(world: World) {
+export function moveAnts(world: World, probabilities: Settings['probabilities']) {
   return world.ants.map(ant => {
     const movingAnt = { ...ant, timer: ant.timer - 1 };
 
@@ -186,19 +186,19 @@ export function moveAnts(world: World) {
 		/* Ok, the ant gets to do something. */
     switch (movingAnt.behavior) {
       case 'wandering':
-        if (Math.random() < config.probabilities.randomDig) {
+        if (Math.random() < probabilities.randomDig) {
           return dig(movingAnt, false, world);
-        } else if (Math.random() < config.probabilities.randomTurn) {
+        } else if (Math.random() < probabilities.randomTurn) {
           return turn(movingAnt, world);
         } else {
-          return wander(movingAnt, world);
+          return wander(movingAnt, world, probabilities);
         }
       case 'carrying':
-        if (Math.random() < config.probabilities.randomDrop) {
+        if (Math.random() < probabilities.randomDrop) {
           return drop(movingAnt, world);
         }
 
-        return carry(movingAnt, world);
+        return carry(movingAnt, world, probabilities);
     }
 
     throw new Error(`Unsupported behavior: ${movingAnt.behavior}`);
@@ -236,7 +236,7 @@ function getSandDepth(x: number, y: number, world: World) {
 
 // TOOD: IDK how I feel about it, but in a very crowded ant world ants can fall *with* the sand that's falling.
 // It's actually pretty great, but I feel kind of bad for the ants and it seems unintentional.
-export function sandFall(world: World) {
+export function sandFall(world: World, compactSandDepth: number) {
   const fallenSandIndices = [] as number[];
 
   world.fallingSands.forEach((fallingSand, index) => {
@@ -283,7 +283,7 @@ export function sandFall(world: World) {
 
     /* Compact sand into dirt. */
     const sandDepth = getSandDepth(x, y + 1, world);
-    if (sandDepth >= config.compactSandDepth) {
+    if (sandDepth >= compactSandDepth) {
       world.elements[y + sandDepth][x] = 'dirt';
     }
   });
