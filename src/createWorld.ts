@@ -29,6 +29,18 @@ function createWorld(width: number, height: number, dirtPercent: number, antCoun
     });
   });
 
+  // const testAnts = [
+  //   createAnt(5, 5, 'wandering', 'left', 0),
+  //   createAnt(10, 5, 'wandering', 'left', 90),
+  //   createAnt(15, 5, 'wandering', 'left', 180),
+  //   createAnt(20, 5, 'wandering', 'left', 270),
+
+  //   createAnt(25, 5, 'wandering', 'right', 0),
+  //   createAnt(30, 5, 'wandering', 'right', 90),
+  //   createAnt(35, 5, 'wandering', 'right', 180),
+  //   createAnt(40, 5, 'wandering', 'right', 270),
+  // ];
+
   const ants = Array.from({ length: antCount }, () => {
     // Put the ant at a random location along the x-axis that fits within the bounds of the world.
     const x = Math.round(Math.random() * 1000) % width;

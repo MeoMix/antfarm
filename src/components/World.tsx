@@ -48,6 +48,7 @@ function World({ elements, ants, surfaceLevel, antColor }: Props) {
             height={1.2}
             facing={ant.facing}
             angle={ant.angle}
+            behavior={ant.behavior}
             color={antColor}
           />
         ))

@@ -19,12 +19,12 @@ const TICK_COUNT_BATCH_SIZE = 500;
 function App() {
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
   const lastWorldUpdateTimeMsRef = useRef(0);
-  const [pendingTickCount, setPendingTickCount] = useState(TICK_COUNT_BATCH_SIZE * 100);
+  const [pendingTickCount, setPendingTickCount] = useState(0);
 
   const [settings, setSettings] = useState(() => {
     const savedSettingsJson = localStorage.getItem('antfarm-settings');
     const savedSettings = savedSettingsJson ? JSON.parse(savedSettingsJson) as (typeof config & { version: string }) : null;
-    
+
     if (!savedSettings) {
       return config;
     }
@@ -40,7 +40,7 @@ function App() {
   const [world, setWorld] = useState(() => {
     const savedWorldJson = localStorage.getItem('antfarm-world');
     const savedWorld = savedWorldJson ? JSON.parse(savedWorldJson) as (ReturnType<typeof createNewWorld> & { version: string }) : null;
-    
+
     if (!savedWorld) {
       return createNewWorld();
     }
@@ -54,7 +54,7 @@ function App() {
     if (pendingTickCount === 0) {
       return;
     }
-    
+
     setWorld(world => {
       if (pendingTickCount === 0) {
         return;
