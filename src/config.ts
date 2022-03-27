@@ -3,7 +3,7 @@ const config = {
   // Save the world once a minute because it's possible the browser could crash so saving on window unload isn't 100% reliable.
   autoSaveIntervalMs: 60 * 1000,
   compactSandDepth: 15, // sand turns to dirt when stacked this high
-  initialDirtPercent: 0.5,
+  initialDirtPercent: 2 / 3,
   initialAntCount: 20,
   antColor: '#9537DB', // purple!
 
