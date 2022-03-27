@@ -172,7 +172,7 @@ function App() {
       />
 
       <PendingTickCountDialog
-        open={pendingTickCount > TICK_COUNT_BATCH_SIZE}
+        open={pendingTickCount > TICK_COUNT_BATCH_SIZE * 5}
         handleCancel={() => {
           setPendingTickCount(0);
         }}
