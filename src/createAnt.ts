@@ -28,6 +28,7 @@ export type Ant = {
   facing: Facing,
   angle: Angle,
   timer: number;
+  name: string;
 }
 
 const BehaviorTimingFactors = {
@@ -37,13 +38,15 @@ const BehaviorTimingFactors = {
 
 export const getTimer = (behavior: Behavior) => BehaviorTimingFactors[behavior] + Math.floor((Math.random() * 3)) - 1;
 
-function createAnt(x: number, y: number, behavior: Behavior, facing: Facing, angle: Angle): Ant {
+function createAnt(x: number, y: number, behavior: Behavior, facing: Facing, angle: Angle, name: string): Ant {
   return {
     location: { x, y },
     behavior,
     facing,
     angle,
     timer: getTimer(behavior),
+    // TODO: This is basically a view-only property and shouldn't be tacked onto the model, but I am laaaazy.
+    name,
   };
 }
 

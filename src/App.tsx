@@ -9,7 +9,7 @@ import SettingsDialog from './components/SettingsDialog';
 import WorldContainer from './components/WorldContainer';
 import PendingTickCountDialog from './components/PendingTickCountDialog';
 
-const VERSION = '0.0.2';
+const VERSION = '0.0.3';
 
 // 16:9 aspect ratio to favor widescreen monitors, letterboxing will occur on all other sizes.
 const WORLD_WIDTH = 96 * 1.5;

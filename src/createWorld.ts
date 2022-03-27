@@ -1,6 +1,7 @@
 
 import createAnt from './createAnt';
 import type { Ant } from './createAnt';
+import namesJson from './names.json';
 
 export type Element = 'dirt' | 'sand' | 'air';
 
@@ -48,8 +49,9 @@ function createWorld(width: number, height: number, dirtPercent: number, antCoun
     const y = surfaceLevel;
     // Randomly position ant facing left or right
     const facing = Math.random() < 0.5 ? 'left' : 'right';
+    const name = namesJson.names[Math.floor(Math.random() * namesJson.names.length)];
 
-    return createAnt(x, y, 'wandering', facing, 0);
+    return createAnt(x, y, 'wandering', facing, 0, name);
   });
 
   const fallingSands = [] as FallingSand[];
