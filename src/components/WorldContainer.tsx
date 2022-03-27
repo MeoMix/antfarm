@@ -1,7 +1,7 @@
 
+import { memo, useState, useRef, useEffect } from 'react';
 import { Stage, Container } from '@inlet/react-pixi';
 import { Box } from '@mui/material';
-import { useState, useRef, useEffect } from 'react';
 import World from './World';
 import type { World as WorldModel } from '../createWorld';
 
@@ -40,19 +40,19 @@ function WorldContainer({ world, antColor }: Props) {
     <Box position="relative" width="100%" flex={1}>
       <Box position="absolute" width="100%" height="100%" display="flex" justifyContent="center" ref={stageBoxRef} >
         <Stage
-        width={world.width * scale}
-        height={world.height * scale}
-        options={{
-          resolution: window.devicePixelRatio,
-        }}
-      >
-        <Container scale={scale}>
-          <World elements={world.elements} ants={world.ants} surfaceLevel={world.surfaceLevel} antColor={antColor} />
-        </Container>
-      </Stage>
+          width={world.width * scale}
+          height={world.height * scale}
+          options={{
+            resolution: window.devicePixelRatio,
+          }}
+        >
+          <Container scale={scale}>
+            <World elements={world.elements} ants={world.ants} surfaceLevel={world.surfaceLevel} antColor={antColor} />
+          </Container>
+        </Stage>
       </Box>
     </Box>
   );
 }
 
-export default WorldContainer;
+export default memo(WorldContainer);

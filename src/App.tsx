@@ -7,16 +7,19 @@ import config from './config';
 import { moveAnts, sandFall } from './util';
 import SettingsDialog from './components/SettingsDialog';
 import WorldContainer from './components/WorldContainer';
+import PendingTickCountDialog from './components/PendingTickCountDialog';
 
 const VERSION = '0.0.2';
 
 // 16:9 aspect ratio to favor widescreen monitors, letterboxing will occur on all other sizes.
 const WORLD_WIDTH = 96 * 1.5;
 const WORLD_HEIGHT = 54 * 1.5;
+const TICK_COUNT_BATCH_SIZE = 500;
 
 function App() {
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
   const lastWorldUpdateTimeMsRef = useRef(0);
+  const [pendingTickCount, setPendingTickCount] = useState(TICK_COUNT_BATCH_SIZE * 100);
 
   const [settings, setSettings] = useState(() => {
     const savedSettingsJson = localStorage.getItem('antfarm-settings');
@@ -46,36 +49,45 @@ function App() {
     return version === VERSION ? world : createNewWorld();
   });
 
+  // TODO: this still isn't implemented well. would be better to pause a brief period of time between runs
+  useEffect(() => {
+    if (pendingTickCount === 0) {
+      return;
+    }
+    
+    setWorld(world => {
+      if (pendingTickCount === 0) {
+        return;
+      }
+
+      // TODO: Prefer immutable world instead of breaking world reference (it's too expensive)
+      let updatedWorld = JSON.parse(JSON.stringify(world));
+      let tickCount = 0;
+      while (tickCount < pendingTickCount && tickCount < TICK_COUNT_BATCH_SIZE) {
+        updatedWorld.ants = moveAnts(updatedWorld, settings.probabilities);
+        sandFall(updatedWorld, settings.compactSandDepth);
+        tickCount++
+      }
+      setPendingTickCount(pendingTickCount => pendingTickCount - tickCount);
+
+      return updatedWorld;
+    });
+  }, [pendingTickCount, settings.probabilities, settings.compactSandDepth])
+
   // Main loop for updating world state. Try to run every N ms (configurable), play catch-up if multiple
   // ticks are pending. This can occur in various scenarios. For example, if configured tick rate is very low,
   // or if browser tab is inactive then setInterval will slow to once-per-second.
   useEffect(() => {
     let intervalId = 0;
 
-    function updateWorld(deltaMs: number) {
-      const elapsedTicks = Math.floor(deltaMs / settings.tickRateMs);
-      if (elapsedTicks === 0) {
-        return;
-      }
-      
-      setWorld(world => {
-        // TODO: Prefer immutable world instead of breaking world reference (it's too expensive)
-        let updatedWorld = JSON.parse(JSON.stringify(world));
-        for (let tickCount = 0; tickCount < elapsedTicks; tickCount++) {
-          updatedWorld.ants = moveAnts(updatedWorld, settings.probabilities);
-          sandFall(updatedWorld, settings.compactSandDepth);
-        }
-  
-        return updatedWorld;
-      });
-    }
-
     function handleInterval() {
       const timestamp = performance.now();
-      const delta = timestamp - lastWorldUpdateTimeMsRef.current;
-      if (delta > settings.tickRateMs) {
+      const deltaMs = timestamp - lastWorldUpdateTimeMsRef.current;
+      if (deltaMs > settings.tickRateMs) {
         lastWorldUpdateTimeMsRef.current = timestamp;
-        updateWorld(delta);
+
+        const elapsedTickCount = Math.floor(deltaMs / settings.tickRateMs);
+        setPendingTickCount(pendingTickCount => pendingTickCount + elapsedTickCount);
       }
     }
 
@@ -84,7 +96,7 @@ function App() {
     return () => {
       window.clearInterval(intervalId);
     }
-  }, [settings.tickRateMs, settings.compactSandDepth, settings.probabilities]);
+  }, [settings.tickRateMs]);
 
   // TODO: idk how to write this properly just yet. it's wrong that setInterval would get set/cleared frequently,
   // but world is updated a lot and it's no good if a stale world is saved
@@ -157,6 +169,14 @@ function App() {
         onResetSettings={handleResetSettings}
         onSettingsChange={updatedSettings => setSettings({ ...settings, ...updatedSettings })}
         settings={settings}
+      />
+
+      <PendingTickCountDialog
+        open={pendingTickCount > TICK_COUNT_BATCH_SIZE}
+        handleCancel={() => {
+          setPendingTickCount(0);
+        }}
+        pendingTickCount={pendingTickCount}
       />
 
       <WorldContainer world={world} antColor={settings.antColor} />

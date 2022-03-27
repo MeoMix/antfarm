@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Dialog, DialogTitle, DialogContent, Button, TextField, Grid } from "@mui/material";
 import type { Settings } from '../config';
 
@@ -133,4 +134,4 @@ function SettingsDialog({ open, onClose, onResetWorld, onResetSettings, onSettin
   );
 }
 
-export default SettingsDialog;
+export default memo(SettingsDialog);
