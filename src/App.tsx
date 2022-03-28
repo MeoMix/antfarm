@@ -1,23 +1,29 @@
 import './App.css';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { AppBar, IconButton, Toolbar, Typography } from '@mui/material';
-import { Settings as SettingsIcon } from '@mui/icons-material';
+import { Settings as SettingsIcon, TouchApp as TouchAppIcon } from '@mui/icons-material';
 import createWorld from './createWorld';
-import config from './config';
+import type { Element } from './createWorld';
+import config, { Settings } from './config';
 import { moveAnts, sandFall } from './util';
 import SettingsDialog from './components/SettingsDialog';
 import WorldContainer from './components/WorldContainer';
 import PendingTickCountDialog from './components/PendingTickCountDialog';
+import TouchAppDialog from './components/TouchAppDialog';
+import type { Action } from './components/TouchAppDialog';
+import type { Point } from './Point';
 
 const VERSION = '0.0.3';
 
 // 16:9 aspect ratio to favor widescreen monitors, letterboxing will occur on all other sizes.
-const WORLD_WIDTH = 96 * 1.5;
-const WORLD_HEIGHT = 54 * 1.5;
+const WORLD_WIDTH = 144;
+const WORLD_HEIGHT = 81;
 const TICK_COUNT_BATCH_SIZE = 500;
 
 function App() {
+  const [selectedAction, setSelectedAction] = useState<Action>('default');
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
+  const [isTouchAppDialogOpen, setIsTouchAppDialogOpen] = useState(false);
   const lastWorldUpdateTimeMsRef = useRef(0);
   const [pendingTickCount, setPendingTickCount] = useState(0);
 
@@ -129,25 +135,57 @@ function App() {
     saveSettings();
   }, [settings]);
 
-  function handleSettingsClick(){
+  const handleElementClick = useCallback((element: Element, location: Point) => {
+    console.log({ element, location, selectedAction });
+    if (element === 'air' && selectedAction === 'food') {
+      setWorld(world => {
+        let updatedWorld = JSON.parse(JSON.stringify(world));
+        updatedWorld.elements[location.y][location.x] = 'food' as const;
+
+        return updatedWorld;
+      });
+    }
+  }, [selectedAction]);
+
+  const handleTouchAppClick = useCallback(() => {
+    setIsTouchAppDialogOpen(true);
+  }, []);
+
+  const handleTouchAppDialogClose = useCallback(() => {
+    setIsTouchAppDialogOpen(false);
+  }, []);
+
+  const handleSelectAction = useCallback((selectedAction: Action) => {
+    setSelectedAction(selectedAction);
+  }, []);
+
+  const handleSettingsClick = useCallback(() => {
     setIsSettingsDialogOpen(true);
-  }
+  }, []);
 
-  function handleSettingsDialogClose() {
+  const handleSettingsDialogClose = useCallback(() => {
     setIsSettingsDialogOpen(false);
-  }
+  }, []);
 
-  function handleResetWorld() {
+  const handleSettingsChange = useCallback((updatedSettings: Settings) => {
+    setSettings(settings => ({ ...settings, ...updatedSettings }));
+  }, []);
+
+  const handleResetWorld = useCallback(() => {
     localStorage.removeItem('antfarm-world');
     setWorld(createNewWorld());
     setIsSettingsDialogOpen(false);
-  }
+  }, [createNewWorld]);
 
-  function handleResetSettings() {
+  const handleResetSettings = useCallback(() => {
     localStorage.removeItem('antfarm-settings');
     setSettings(config);
     setIsSettingsDialogOpen(false);
-  }
+  }, []);
+
+  const handlePendingTickDialogCancel = useCallback(() => {
+    setPendingTickCount(0);
+  }, []);
 
   return (
     <div className="App">
@@ -156,6 +194,9 @@ function App() {
           <Typography sx={{ flexGrow: 1 }} color="primary">
             Ant Farm
           </Typography>
+          {/* <IconButton onClick={handleTouchAppClick}>
+            <TouchAppIcon />
+          </IconButton> */}
           <IconButton onClick={handleSettingsClick}>
             <SettingsIcon />
           </IconButton>
@@ -167,19 +208,28 @@ function App() {
         onClose={handleSettingsDialogClose}
         onResetWorld={handleResetWorld}
         onResetSettings={handleResetSettings}
-        onSettingsChange={updatedSettings => setSettings({ ...settings, ...updatedSettings })}
+        onSettingsChange={handleSettingsChange}
         settings={settings}
       />
 
-      <PendingTickCountDialog
-        open={pendingTickCount > TICK_COUNT_BATCH_SIZE * 5}
-        handleCancel={() => {
-          setPendingTickCount(0);
-        }}
-        pendingTickCount={pendingTickCount}
+      <TouchAppDialog
+        open={isTouchAppDialogOpen}
+        selectedAction={selectedAction}
+        onClose={handleTouchAppDialogClose}
+        onSelectAction={handleSelectAction}
       />
 
-      <WorldContainer world={world} antColor={settings.antColor} />
+      {
+        pendingTickCount > TICK_COUNT_BATCH_SIZE * 5 ? (
+          <PendingTickCountDialog
+            open
+            handleCancel={handlePendingTickDialogCancel}
+            pendingTickCount={pendingTickCount}
+          />
+        ) : null
+      }
+
+      <WorldContainer world={world} antColor={settings.antColor} onElementClick={handleElementClick} />
     </div>
   );
 }

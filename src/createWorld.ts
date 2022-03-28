@@ -3,7 +3,7 @@ import createAnt from './createAnt';
 import type { Ant } from './createAnt';
 import namesJson from './names.json';
 
-export type Element = 'dirt' | 'sand' | 'air';
+export type Element = 'dirt' | 'sand' | 'air' | 'food';
 
 // TODO: Feels weird that we have both "sand" as an element (and has an implicit x/y position)
 // but then we track "FallingSands" separately.

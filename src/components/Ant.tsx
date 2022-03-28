@@ -21,10 +21,7 @@ function Ant({ x, y, width, height, facing, angle, behavior, name, color }: Prop
   const image = Loader.shared.resources['Ant'].data as HTMLImageElement;
 
   return (
-    <Container
-      x={x}
-      y={y}
-    >
+    <Container x={x} y={y}>
       <Container
         // move pivot to center so changes to angle/scale maintain consistent centering
         pivot={{ x: width / 2, y: height / 2 }}
@@ -40,7 +37,6 @@ function Ant({ x, y, width, height, facing, angle, behavior, name, color }: Prop
         { behavior === 'carrying' ? <Sand x={1} y={0.33} width={0.5} height={0.5} /> : null }
 
         <Sprite
-          interactiveChildren={false}
           image={image}
           // TODO: visually more appropriate if ants took up multiple grid cells along x axis.
           // scaling img down to fit into grid cell the size of width

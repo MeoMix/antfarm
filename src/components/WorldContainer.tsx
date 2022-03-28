@@ -2,16 +2,24 @@
 import { memo, useState, useRef, useEffect } from 'react';
 import { Stage, Container } from '@inlet/react-pixi';
 import { Box } from '@mui/material';
+import { isEqual } from 'lodash';
 import World from './World';
-import type { World as WorldModel } from '../createWorld';
+import type { World as WorldModel, Element } from '../createWorld';
+import type { Point } from '../Point';
 
 type Props = {
   world: WorldModel;
   // TODO: don't pass this in like this.. should live on the ants which should be "view state" ants not "model state" ants
   antColor: string;
+  onElementClick: (element: Element, location: Point) => void;
 }
 
-function WorldContainer({ world, antColor }: Props) {
+// Custom equality check because world might not be reference equal but is functionally the same
+function areEqual(previousProps: Props, nextProps: Props) {
+  return isEqual(previousProps, nextProps);
+}
+
+function WorldContainer({ world, antColor, onElementClick }: Props) {
   const [scale, setScale] = useState(0);
   const stageBoxRef = useRef<HTMLDivElement>(null);
   
@@ -46,8 +54,18 @@ function WorldContainer({ world, antColor }: Props) {
             resolution: window.devicePixelRatio,
           }}
         >
-          <Container scale={scale}>
-            <World elements={world.elements} ants={world.ants} surfaceLevel={world.surfaceLevel} antColor={antColor} />
+          <Container scale={scale} interactive click={(event) => {
+            const localPosition = event.data.getLocalPosition(event.target.parent);
+            const x = Math.floor(localPosition.x / scale);
+            const y = Math.floor(localPosition.y / scale);
+            onElementClick(world.elements[y][x], { x, y });
+          }}>
+            <World 
+              elements={world.elements}
+              ants={world.ants}
+              surfaceLevel={world.surfaceLevel}
+              antColor={antColor}
+            />
           </Container>
         </Stage>
       </Box>
@@ -55,4 +73,4 @@ function WorldContainer({ world, antColor }: Props) {
   );
 }
 
-export default memo(WorldContainer);
+export default memo(WorldContainer, areEqual);
