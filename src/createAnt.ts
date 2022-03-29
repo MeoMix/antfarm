@@ -1,3 +1,4 @@
+import { uniqueId } from 'lodash';
 import type { Point } from './Point';
 
 export type Behavior = 'wandering' | 'carrying';
@@ -22,6 +23,7 @@ export const getRotatedAngle = (angle: Angle, rotation: number): Angle => {
 };
 
 export type Ant = {
+  id: string;
   // The location of the ants head - need to consider location + facing + width to determine body (assuming height: 1)
   location: Point;
   behavior: Behavior;
@@ -40,6 +42,7 @@ export const getTimer = (behavior: Behavior) => BehaviorTimingFactors[behavior] 
 
 function createAnt(x: number, y: number, behavior: Behavior, facing: Facing, angle: Angle, name: string): Ant {
   return {
+    id: uniqueId('ant_'),
     location: { x, y },
     behavior,
     facing,

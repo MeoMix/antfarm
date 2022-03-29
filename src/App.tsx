@@ -12,8 +12,10 @@ import PendingTickCountDialog from './components/PendingTickCountDialog';
 import TouchAppDialog from './components/TouchAppDialog';
 import type { Action } from './components/TouchAppDialog';
 import type { Point } from './Point';
+import type { Ant } from './createAnt';
+import SelectedAntDialog from './components/SelectedAntDialog';
 
-const VERSION = '0.0.3';
+const VERSION = '0.0.4';
 
 // 16:9 aspect ratio to favor widescreen monitors, letterboxing will occur on all other sizes.
 const WORLD_WIDTH = 144;
@@ -22,6 +24,7 @@ const TICK_COUNT_BATCH_SIZE = 500;
 
 function App() {
   const [selectedAction, setSelectedAction] = useState<Action>('default');
+  const [selectedAntId, setSelectedAntId] = useState<Ant['id']>();
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
   const [isTouchAppDialogOpen, setIsTouchAppDialogOpen] = useState(false);
   const lastWorldUpdateTimeMsRef = useRef(0);
@@ -136,7 +139,8 @@ function App() {
   }, [settings]);
 
   const handleElementClick = useCallback((element: Element, location: Point) => {
-    console.log({ element, location, selectedAction });
+    setSelectedAntId(undefined);
+
     if (element === 'air' && selectedAction === 'food') {
       setWorld(world => {
         let updatedWorld = JSON.parse(JSON.stringify(world));
@@ -146,6 +150,10 @@ function App() {
       });
     }
   }, [selectedAction]);
+
+  const handleAntClick = useCallback((ant: Ant) => {
+    setSelectedAntId(ant.id);
+  }, []);
 
   const handleTouchAppClick = useCallback(() => {
     setIsTouchAppDialogOpen(true);
@@ -194,9 +202,9 @@ function App() {
           <Typography sx={{ flexGrow: 1 }} color="primary">
             Ant Farm
           </Typography>
-          {/* <IconButton onClick={handleTouchAppClick}>
+          <IconButton onClick={handleTouchAppClick}>
             <TouchAppIcon />
-          </IconButton> */}
+          </IconButton>
           <IconButton onClick={handleSettingsClick}>
             <SettingsIcon />
           </IconButton>
@@ -219,6 +227,11 @@ function App() {
         onSelectAction={handleSelectAction}
       />
 
+      <SelectedAntDialog
+        open={!!world.ants.find(ant => ant.id === selectedAntId)}
+        selectedAnt={world.ants.find(ant => ant.id === selectedAntId)}
+      />
+
       {
         pendingTickCount > TICK_COUNT_BATCH_SIZE * 5 ? (
           <PendingTickCountDialog
@@ -229,7 +242,7 @@ function App() {
         ) : null
       }
 
-      <WorldContainer world={world} antColor={settings.antColor} onElementClick={handleElementClick} />
+      <WorldContainer world={world} antColor={settings.antColor} onElementClick={handleElementClick} onAntClick={handleAntClick} />
     </div>
   );
 }
