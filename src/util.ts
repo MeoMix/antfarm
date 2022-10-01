@@ -144,7 +144,7 @@ function wander(ant: Readonly<Ant>, world: World, probabilities: Settings['proba
 function drop(ant: Readonly<Ant>, world: World) {
   if (getElement(ant.location, world) === 'air') {
     world.elements[ant.location.y][ant.location.x] = 'sand' as const;
-    loosenOne(ant.location, world);
+    loosenOneSand(ant.location, world);
   
     return { ...ant, behavior: 'wandering' as const, timer: getTimer('wandering') };
   }
@@ -205,23 +205,33 @@ export function moveAnts(world: World, probabilities: Settings['probabilities'])
   });
 }
 
-function loosenNeighbors(location: Point, world: World) {
-  for (let y = location.y + 2; y >= location.y - 2; --y) {
-    for (let x = location.x - 2; x <= location.x + 2; ++x) {
-      if ((x !== location.x || y !== location.y) && getElement({ x, y }, world) === 'sand') {
-        loosenOne({ x, y }, world);
+function getAdjacentLocations(location: Point, radius: number) {
+  const locations = [];
+
+  for (let y = location.y + radius; y >= location.y - radius; --y) {
+    for (let x = location.x - radius; x <= location.x + radius; ++x) {
+      if (x !== location.x || y !== location.y) {
+        locations.push({ x, y });
       }
     }
   }
+
+  return locations;
 }
 
- function loosenOne(location: Point, world: World) {
+function loosenNeighbors(location: Point, world: World) {
+  getAdjacentLocations(location, 2)
+    .filter(({ x, y }) => getElement({ x, y }, world) === 'sand')
+    .forEach(({ x, y }) => loosenOneSand({ x, y }, world));
+}
+
+ function loosenOneSand({ x, y }: Point, world: World) {
   /* Check if there's already loose sand at this location. */
-  if (world.fallingSands.find(sand => sand.x === location.x && sand.y === location.y)) {
+  if (world.fallingSandLocations.find(fallingSandLocation => fallingSandLocation.x === x && fallingSandLocation.y === y)) {
     return;
   }
 
-  world.fallingSands.push({ ...location });
+  world.fallingSandLocations.push({ x, y });
 }
 
 function getSandDepth(x: number, y: number, world: World) {
@@ -234,62 +244,63 @@ function getSandDepth(x: number, y: number, world: World) {
   return sandDepth;
 }
 
-// TOOD: IDK how I feel about it, but in a very crowded ant world ants can fall *with* the sand that's falling.
-// It's actually pretty great, but I feel kind of bad for the ants and it seems unintentional.
+function swapElements(locationA: Point, locationB: Point, world: World) {
+  const element = world.elements[locationA.y][locationA.x];
+  world.elements[locationA.y][locationA.x] = world.elements[locationB.y][locationB.x];
+  world.elements[locationB.y][locationB.x] = element;
+}
+
+// Note that in a crowded world ants may fall *with* sand that's falling. This is an unintentional feature because it's hilarious.
 export function sandFall(world: World, compactSandDepth: number) {
-  const fallenSandIndices = [] as number[];
-
-  world.fallingSands.forEach((fallingSand, index) => {
-    const x = fallingSand.x;
-    const y = fallingSand.y;
-    if (!isWithinBounds({ x, y: y + 1 }, world)) {
-      /* Hit bottom - done falling and no compaction possible. */
-      fallenSandIndices.push(index);
-      return;
-    }
-
-    /* Drop the sand onto the next lower sand or dirt. */
-    if (getElement({ x, y: y + 1 }, world) === 'air') {
-      fallingSand.y = y + 1;
-      world.elements[y][x] = 'air' as const;
-      world.elements[fallingSand.y][fallingSand.x] = 'sand' as const;
-      loosenNeighbors({ x, y }, world);
-      return;
-    }
-
-    /* Tip over an edge? */
-    let tipLeft = getElement({ x: x - 1, y }, world) === 'air' && getElement({ x: x - 1, y: y + 1 }, world) === 'air' && getElement({ x: x - 1, y: y + 2 }, world) === 'air';
-    let tipRight = getElement({ x: x + 1, y }, world) === 'air' && getElement({ x: x + 1, y: y + 1 }, world) === 'air' && getElement({ x: x + 1, y: y + 2 }, world) === 'air';
-    if (tipLeft || tipRight) {
-      if (tipLeft && tipRight) {
-        if (Math.random() < 0.5) {
-          tipLeft = false;
-        } else {
-          tipRight = false;
-        }
+  // Derive a map from active sand locations to updated sand locations which will be shown next frame.
+  // If the location does not update then the active sand has come to rest and will cease being tracked.
+  const fallingSandLocationMap = new Map<Point, Point>(world.fallingSandLocations.map(({ x, y }) => {
+    // If there is air below the sand then continue falling down.
+    const goMiddle = getElement({ x, y: y + 1 }, world) === 'air';
+    // Otherwise, likely at rest, but potential for tipping off a precarious ledge.
+    // Look for a column of air two units tall to either side of the sand and consider going in one of those directions.
+    let goLeft = !goMiddle && getElement({ x: x - 1, y }, world) === 'air' && getElement({ x: x - 1, y: y + 1 }, world) === 'air';
+    let goRight = !goMiddle && getElement({ x: x + 1, y }, world) === 'air' && getElement({ x: x + 1, y: y + 1 }, world) === 'air';
+    if (goLeft && goRight) {
+      // Flip a coin and choose a direction randomly to resolve ambiguity in fall direction.
+      if (Math.random() < 0.5) {
+        goLeft = false;
+      } else {
+        goRight = false;
       }
-
-      fallingSand.x = tipLeft ? x - 1 : x + 1;
-      fallingSand.y = y + 1;
-      world.elements[y][x] = 'air';
-      world.elements[fallingSand.y][fallingSand.x] = 'sand';
-      // TODO: This is mutating the fallingSands array as it's being iterated over which seems confusing and/or not implicitly understood
-      loosenNeighbors({ x, y }, world);
-      return;
     }
 
-    /* Found the final resting place. */
-    fallenSandIndices.push(index);
+    const xDelta = (goRight ? 1 : 0) + (goLeft ? -1 : 0);
+    const yDelta = (goMiddle || goLeft || goRight ? 1 : 0);
+    return [{ x, y }, { x: x + xDelta, y: y + yDelta } ];
+  }));
 
-    /* Compact sand into dirt. */
-    const sandDepth = getSandDepth(x, y + 1, world);
-    if (sandDepth >= compactSandDepth) {
-      world.elements[y + sandDepth][x] = 'dirt';
-    }
+  // Create a separate map which omits tracked sand locations which were inactive this frame.
+  const activeFallingSandLocationMap = new Map(
+    Array.from(fallingSandLocationMap.entries())
+      .filter(([oldSandLocation, newSandLocation]) => oldSandLocation.y !== newSandLocation.y)
+  );
+
+  // For all the sand locations which are active - swap the elements (sand/air) at the two locations.
+  activeFallingSandLocationMap.forEach((newSandLocation, oldSandLocation) => {
+    swapElements(oldSandLocation, newSandLocation, world);
   });
 
-  // reverse because index position is important and am removing from array which affects indices.
-  fallenSandIndices.reverse().forEach(index => {
-    world.fallingSands.splice(index, 1);
-  })
+  // Filter sand locations which became inactive from the list of tracked locations.
+  world.fallingSandLocations = Array.from(activeFallingSandLocationMap.values());
+
+  // As a final flair, consider compaction effects and cascading tumbling of sand.
+  fallingSandLocationMap.forEach((newSandLocation, oldSandLocation) => {
+    if (oldSandLocation.y === newSandLocation.y) {
+      // At deep enough levels, sand finds itself crushed back into dirt.
+      const sandDepth = getSandDepth(oldSandLocation.x, oldSandLocation.y + 1, world);
+      if (sandDepth >= compactSandDepth) {
+        world.elements[oldSandLocation.y + sandDepth][oldSandLocation.x] = 'dirt';
+      }
+    } else {
+      // Sand moved, leaving a gap of air, which may cause more sand to fall. Figure out
+      // what is happening and do it cheaply by only considering updates around the active area.
+      loosenNeighbors(newSandLocation, world)
+    }
+  });
 }

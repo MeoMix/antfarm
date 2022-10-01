@@ -1,3 +1,4 @@
+import type { Point } from './Point';
 
 import createAnt from './createAnt';
 import type { Ant } from './createAnt';
@@ -5,19 +6,12 @@ import namesJson from './names.json';
 
 export type Element = 'dirt' | 'sand' | 'air' | 'food';
 
-// TODO: Feels weird that we have both "sand" as an element (and has an implicit x/y position)
-// but then we track "FallingSands" separately.
-export type FallingSand = {
-  x: number;
-  y: number;
-}
-
 export type World = {
-  width: number;
-  height: number;
-  elements: Element[][];
-  fallingSands: FallingSand[];
-  surfaceLevel: number;
+  width: Readonly<number>;
+  height: Readonly<number>;
+  elements: Readonly<Element>[][];
+  fallingSandLocations: Readonly<Point>[];
+  surfaceLevel: Readonly<number>;
   ants: Readonly<Ant[]>,
 }
 
@@ -54,14 +48,14 @@ function createWorld(width: number, height: number, dirtPercent: number, antCoun
     return createAnt(x, y, 'wandering', facing, 0, name);
   });
 
-  const fallingSands = [] as FallingSand[];
+  const fallingSandLocations = [] as Point[];
 
   return {
     width,
     height,
     elements,
     surfaceLevel,
-    fallingSands,
+    fallingSandLocations,
     ants,
   }
 }
