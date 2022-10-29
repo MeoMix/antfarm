@@ -3,7 +3,7 @@ import { isEqual } from 'lodash';
 import type { Element } from '../createWorld';
 import Dirt from './Dirt';
 import Sand from './Sand';
-import Food from './Food';
+import { ParticleContainer } from '@inlet/react-pixi';
 
 type Props = {
   elements: Element[][];
@@ -16,27 +16,21 @@ function areEqual(previousProps: Props, nextProps: Props) {
 
 function Elements({ elements }: Props) {
   return (
-    <>
+    <ParticleContainer maxSize={40000}>
       {
         elements.map((elementRow, y) => elementRow.map((element, x) => {
-          const elementProps = { x, y, width: 1, height: 1 };
-    
           if (element === 'dirt') {
-            return <Dirt key={`${element}-${x}${y}`} {...elementProps} />;
+            return <Dirt key={`${element}-${x}${y}`} x={x} y={y} />;
           }
-    
+
           if (element === 'sand') {
-            return <Sand key={`${element}-${x}${y}`} {...elementProps} />;
+            return <Sand key={`${element}-${x}${y}`} x={x} y={y} />;
           }
-    
-          if (element === 'food') {
-            return <Food key={`${element}-${x}${y}`} {...elementProps} />;
-          }
-    
+
           return null;
         }))
       }
-    </>
+    </ParticleContainer>
 
   );
 }

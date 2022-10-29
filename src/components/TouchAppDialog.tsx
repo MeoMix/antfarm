@@ -37,7 +37,6 @@ function TouchAppDialog({ open, selectedAction, onClose, onSelectAction }: Props
       <DialogContent>
         <RadioGroup onChange={handleChange} defaultValue={selectedAction}>
           <FormControlLabel value="default" control={<Radio />} label="Default" />
-          <FormControlLabel value="food" control={<Radio />} label="Food" />
         </RadioGroup>
       </DialogContent>
     </Dialog>

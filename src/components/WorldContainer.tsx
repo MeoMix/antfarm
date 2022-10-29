@@ -1,5 +1,6 @@
 
 import { memo, useState, useRef, useEffect, useCallback } from 'react';
+import useSize from '@react-hook/size'
 import { InteractionEvent } from 'pixi.js';
 import { Stage, Container } from '@inlet/react-pixi';
 import { Box } from '@mui/material';
@@ -26,13 +27,16 @@ function areEqual(previousProps: Props, nextProps: Props) {
 function WorldContainer({ world, antColor, onElementClick, onAntClick }: Props) {
   const [scale, setScale] = useState(0);
   const stageBoxRef = useRef<HTMLDivElement>(null);
+  const [stageWidth, stageHeight] = useSize(stageBoxRef);
 
   // Ensure the main canvas fills as much of the browser's available space as possible and handle resizing.
   useEffect(() => {
+    /** 
+     * A float representing the scale necessary to make one axis of the world fully visible.
+     * This only reveals the full world if the world's aspect ratio matches the viewport's.
+     **/
     function getScale() {
-      const width = stageBoxRef.current?.offsetWidth ?? 0;
-      const height = stageBoxRef.current?.offsetHeight ?? 0;
-      return Math.min(width / world.width, height / world.height);
+      return Math.max(stageWidth / world.width, stageHeight / world.height);
     }
 
     setScale(getScale())
@@ -46,7 +50,7 @@ function WorldContainer({ world, antColor, onElementClick, onAntClick }: Props) 
     return () => {
       window.removeEventListener('resize', onWindowResize);
     };
-  }, [world.width, world.height]);
+  }, [stageWidth, stageHeight, world.width, world.height]);
 
   const handleWorldClick = useCallback((event: InteractionEvent) => {
     const localPosition = event.data.getLocalPosition(event.target.parent);
@@ -67,13 +71,18 @@ function WorldContainer({ world, antColor, onElementClick, onAntClick }: Props) 
     <Box position="relative" width="100%" flex={1}>
       <Box position="absolute" width="100%" height="100%" display="flex" justifyContent="center" ref={stageBoxRef} >
         <Stage
-          width={world.width * scale}
-          height={world.height * scale}
+          width={stageWidth}
+          height={stageHeight}
           options={{
             resolution: window.devicePixelRatio,
           }}
         >
-          <Viewport width={world.width * scale} height={world.height * scale}>
+          <Viewport
+            screenWidth={stageWidth}
+            screenHeight={stageHeight}
+            worldWidth={world.width * scale}
+            worldHeight={world.height * scale}
+          >
             <Container scale={scale} interactive click={handleWorldClick}>
               <World
                 elements={world.elements}

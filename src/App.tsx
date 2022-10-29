@@ -17,9 +17,8 @@ import SelectedAntDialog from './components/SelectedAntDialog';
 
 const VERSION = '0.0.4';
 
-// 16:9 aspect ratio to favor widescreen monitors, letterboxing will occur on all other sizes.
 const WORLD_WIDTH = 144;
-const WORLD_HEIGHT = 81;
+const WORLD_HEIGHT = 81 * 3;
 const TICK_COUNT_BATCH_SIZE = 500;
 
 function App() {

@@ -17,7 +17,7 @@ type Props = {
 function World({ elements, ants, surfaceLevel, antColor }: Props) {
   return (
     <>
-      { /* Air/Tunnel are non-interactive and so can be rendered with a single sprite. Dirt/Sand are interactive and so need to be rendered in grid chunks. */ }
+      { /* Air/Tunnel are non-interactive and so can be rendered with a single sprite. Dirt/Sand are interactive and so need to be rendered in grid chunks. */}
       <Air x={0} y={0} width={elements[0].length} height={surfaceLevel + 1} />
       <Tunnel x={0} y={surfaceLevel + 1} width={elements[0].length} height={elements.length - surfaceLevel - 1} />
 

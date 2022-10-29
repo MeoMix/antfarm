@@ -4,7 +4,7 @@ import { getTimer, facingAngles } from './createAnt';
 import { add as addPoint } from './Point';
 import type { Point } from './Point';
 import type { Facing, Angle } from './createAnt';
-import type { World  } from './createWorld';
+import type { World } from './createWorld';
 
 // TODO: getDelta should probably not be coupled to 'facing'?
 function getDelta(facing: Facing, angle: Angle): Point {
@@ -74,7 +74,7 @@ function move(ant: Readonly<Ant>, world: World, probabilities: Settings['probabi
     // If ant moves straight forward, it will be standing over air. Instead, turn into the air and remain standing on current block
     // Ant will try to fill the gap with sand if possible.
     const shouldDropSand = ant.behavior === 'carrying' && ant.location.y <= world.surfaceLevel && Math.random() < probabilities.aboveSurfaceDrop;
-    
+
     // If dropping sand into gap then just do that for now, next tick can decide to walk onto it
     if (shouldDropSand) {
       return drop(ant, world);
@@ -104,7 +104,7 @@ function dig(ant: Readonly<Ant>, isForcedForward: boolean, world: World) {
 function turn(ant: Readonly<Ant>, world: World) {
   // First try turning perpendicularly towards the ant's back. If that fails, try turning around.
   const backAngle = getRotatedAngle(ant.angle, -1);
-  if (isValidLocation({ ...ant, angle: backAngle }, world)){
+  if (isValidLocation({ ...ant, angle: backAngle }, world)) {
     return { ...ant, angle: backAngle };
   }
 
@@ -145,7 +145,7 @@ function drop(ant: Readonly<Ant>, world: World) {
   if (getElement(ant.location, world.elements) === 'air') {
     world.elements[ant.location.y][ant.location.x] = 'sand' as const;
     loosenOneSand(ant.location, world);
-  
+
     return { ...ant, behavior: 'wandering' as const, timer: getTimer('wandering') };
   }
 
@@ -183,7 +183,7 @@ export function moveAnts(world: World, probabilities: Settings['probabilities'])
       }
     }
 
-		/* Ok, the ant gets to do something. */
+    /* Ok, the ant gets to do something. */
     switch (movingAnt.behavior) {
       case 'wandering':
         if (Math.random() < probabilities.randomDig) {
@@ -225,7 +225,7 @@ function loosenNeighbors(location: Point, world: World) {
     .forEach(({ x, y }) => loosenOneSand({ x, y }, world));
 }
 
- function loosenOneSand({ x, y }: Point, world: World) {
+function loosenOneSand({ x, y }: Point, world: World) {
   /* Check if there's already loose sand at this location. */
   if (world.fallingSandLocations.find(fallingSandLocation => fallingSandLocation.x === x && fallingSandLocation.y === y)) {
     return;
@@ -272,7 +272,7 @@ export function sandFall(world: World, compactSandDepth: number) {
 
     const xDelta = (goRight ? 1 : 0) + (goLeft ? -1 : 0);
     const yDelta = (goMiddle || goLeft || goRight ? 1 : 0);
-    return [{ x, y }, { x: x + xDelta, y: y + yDelta } ];
+    return [{ x, y }, { x: x + xDelta, y: y + yDelta }];
   }));
 
   // Create a separate map which omits tracked sand locations which were inactive this frame.

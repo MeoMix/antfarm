@@ -3,17 +3,17 @@ import { Texture } from "pixi.js";
 import { memo } from "react";
 
 type Props = {
-  width: number;
-  height: number;
+  width?: number;
+  height?: number;
   x: number;
   y: number;
 }
 
-function Dirt({ width, height, x, y }: Props) {
+function Dirt({ width = 1, height = 1, x, y }: Props) {
   return (
     <Sprite
       interactiveChildren={false}
-      x={x} 
+      x={x}
       y={y}
       width={width}
       height={height}

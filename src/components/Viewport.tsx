@@ -3,26 +3,30 @@ import { PixiComponent, useApp } from "@inlet/react-pixi";
 import { Viewport as PixiViewport } from "pixi-viewport";
 
 type Props = {
-  width: number;
-  height: number;
+  screenWidth: number;
+  screenHeight: number;
+  worldWidth: number;
+  worldHeight: number;
   children?: React.ReactNode;
 }
 
 type PixiComponentProps = {
-  width: number;
-  height: number;
+  screenWidth: number;
+  screenHeight: number;
+  worldWidth: number;
+  worldHeight: number;
   app: PIXI.Application;
 }
 
 const PixiComponentViewport = PixiComponent('Viewport', {
-  create: (props: PixiComponentProps) => {
+  create: ({ screenWidth, screenHeight, worldWidth, worldHeight, app }: PixiComponentProps) => {
     const viewport = new PixiViewport({
-      screenWidth: props.width,
-      screenHeight: props.height,
-      worldWidth: props.width,
-      worldHeight: props.height,
-      ticker: props.app.ticker,
-      interaction: props.app.renderer.plugins.interaction
+      screenWidth,
+      screenHeight,
+      worldWidth,
+      worldHeight,
+      ticker: app.ticker,
+      interaction: app.renderer.plugins.interaction
     });
 
     viewport
@@ -35,8 +39,15 @@ const PixiComponentViewport = PixiComponent('Viewport', {
     return viewport;
   },
 
-  applyProps: (instance, _oldProps, newProps) => {
-    instance.resize(newProps.width, newProps.height, newProps.width, newProps.height);
+  applyProps: (instance, oldProps, newProps) => {
+    if (
+      oldProps.screenWidth !== newProps.screenWidth ||
+      oldProps.screenHeight !== newProps.screenHeight ||
+      oldProps.worldWidth !== newProps.screenWidth ||
+      oldProps.worldHeight !== newProps.worldHeight
+    ) {
+      instance.resize(newProps.screenWidth, newProps.screenHeight, newProps.worldWidth, newProps.worldHeight);
+    }
   },
 });
 
