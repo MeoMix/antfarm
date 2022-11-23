@@ -1,5 +1,7 @@
 FROM rust:1.65.0-alpine3.16 AS base
 
+RUN apt-get install g++ pkg-config libx11-dev libasound2-dev libudev-dev
+
 # Create a root directory for the application
 RUN mkdir -p /usr/app
 WORKDIR /usr/app
@@ -11,10 +13,8 @@ COPY src ./src
 
 FROM base AS development
 
-RUN cargo build
-CMD ["./target/debug/antfarm"]
+CMD ["cargo", "run"]
 
 FROM base AS production
 
-RUN cargo build --release
-CMD ["./target/release/antfarm"]
+CMD ["cargo", "build --release"]

@@ -1,7 +1,0 @@
-version: "3"
-services:
-  simulation:
-    platform: "linux/amd64"
-    build:
-      context: simulation
-      target: development
