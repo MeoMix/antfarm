@@ -1,11 +1,5 @@
 FROM node:19.2.0-alpine3.16 AS base
 
-# Install the apt-utils package
-RUN apk add --no-cache apt-utils
-
-# Install node and npm
-RUN apt-get install -y node npm
-
 # Create a root directory for the application
 RUN mkdir -p /usr/app
 WORKDIR /usr/app
