@@ -23,4 +23,4 @@ function Sand({ width = 1, height = 1, x, y }: Props) {
   )
 }
 
-export default memo(Sand);
+export default memo(Sand, () => true);

@@ -1,4 +1,5 @@
 import * as PIXI from "pixi.js";
+import { Simple } from "pixi-cull";
 import { PixiComponent, useApp } from "@inlet/react-pixi";
 import { Viewport as PixiViewport } from "pixi-viewport";
 
@@ -35,6 +36,23 @@ const PixiComponentViewport = PixiComponent('Viewport', {
       .wheel()
       .clamp({ direction: 'all' })
       .clampZoom({ minScale: 1.0, maxScale: 3.0 });
+
+    const cull = new Simple();
+    cull.addList(
+      (viewport.children as PIXI.Container[])
+        .map((layer) => {
+          return layer.children;
+        })
+        .flat()
+    );
+    cull.cull(viewport.getVisibleBounds());
+
+    viewport.on("moved", () => {
+      if (viewport.dirty) {
+        cull.cull(viewport.getVisibleBounds());
+        viewport.dirty = false;
+      }
+    });
 
     return viewport;
   },

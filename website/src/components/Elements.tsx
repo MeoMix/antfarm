@@ -20,11 +20,11 @@ function Elements({ elements }: Props) {
       {
         elements.map((elementRow, y) => elementRow.map((element, x) => {
           if (element === 'dirt') {
-            return <Dirt key={`${element}-${x}${y}`} x={x} y={y} />;
+            return <Dirt key={`${x}${y}`} x={x} y={y} />;
           }
 
           if (element === 'sand') {
-            return <Sand key={`${element}-${x}${y}`} x={x} y={y} />;
+            return <Sand key={`${x}${y}`} x={x} y={y} />;
           }
 
           return null;

@@ -23,4 +23,4 @@ function Tunnel({ width = 1, height = 1, x, y }: Props) {
   )
 }
 
-export default memo(Tunnel);
+export default memo(Tunnel, () => true);

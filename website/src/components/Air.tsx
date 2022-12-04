@@ -23,4 +23,4 @@ function Air({ width = 1, height = 1, x, y }: Props) {
   )
 }
 
-export default memo(Air);
+export default memo(Air, () => true);
