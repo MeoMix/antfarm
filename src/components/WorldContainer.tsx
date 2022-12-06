@@ -31,7 +31,7 @@ function WorldContainer({ world, antColor, onElementClick, onAntClick }: Props) 
 
   // Ensure the main canvas fills as much of the browser's available space as possible and handle resizing.
   useEffect(() => {
-    /** 
+    /**
      * A float representing the scale necessary to make one axis of the world fully visible.
      * This only reveals the full world if the world's aspect ratio matches the viewport's.
      **/
@@ -58,11 +58,12 @@ function WorldContainer({ world, antColor, onElementClick, onAntClick }: Props) 
     const y = Math.floor(localPosition.y / scale);
 
     const ant = world.ants.find(ant => ant.location.x === x && ant.location.y === y);
+    const element = world.elements.find(element => element.location.x === x && element.location.y === y)?.element;
 
     if (ant) {
       onAntClick(ant)
-    } else {
-      onElementClick(world.elements[y][x], { x, y });
+    } else if (element) {
+      onElementClick(element, { x, y });
     }
 
   }, [scale, world.elements, world.ants, onElementClick, onAntClick]);

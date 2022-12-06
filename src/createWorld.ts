@@ -4,12 +4,18 @@ import createAnt from './createAnt';
 import type { Ant } from './createAnt';
 import namesJson from './names.json';
 
+export type ElementAssemblage = {
+  // id: number;
+  location: Point;
+  element: Element;
+};
+
 export type Element = 'dirt' | 'sand' | 'air' | 'food';
 
 export type World = {
   width: Readonly<number>;
   height: Readonly<number>;
-  elements: Readonly<Element>[][];
+  elements: Readonly<ElementAssemblage>[];
   fallingSandLocations: Readonly<Point>[];
   surfaceLevel: Readonly<number>;
   ants: Readonly<Ant[]>,
@@ -19,10 +25,11 @@ function createWorld(width: number, height: number, dirtPercent: number, antCoun
   const surfaceLevel = Math.floor(height - (height * dirtPercent));
 
   const elements = Array.from({ length: height }, (_, rowIndex) => {
-    return Array.from({ length: width }, () => {
-      return rowIndex <= surfaceLevel ? 'air' : 'dirt';
+    return Array.from({ length: width }, (_, columnIndex) => {
+      const element = rowIndex <= surfaceLevel ? 'air' : 'dirt' as const;
+      return { location: { x: columnIndex, y: rowIndex }, element } as const;
     });
-  });
+  }).flat();
 
   // const testAnts = [
   //   createAnt(5, 5, 'wandering', 'left', 0),

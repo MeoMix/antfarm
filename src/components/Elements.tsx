@@ -1,12 +1,12 @@
 import { memo } from "react";
 import { isEqual } from 'lodash';
-import type { Element } from '../createWorld';
+import type { ElementAssemblage } from '../createWorld';
 import Dirt from './Dirt';
 import Sand from './Sand';
 import { ParticleContainer } from '@inlet/react-pixi';
 
 type Props = {
-  elements: Element[][];
+  elements: ElementAssemblage[];
 }
 
 // Custom equality check because elements might not be reference equal but is functionally the same
@@ -18,7 +18,7 @@ function Elements({ elements }: Props) {
   return (
     <ParticleContainer maxSize={40000}>
       {
-        elements.map((elementRow, y) => elementRow.map((element, x) => {
+        elements.map(({ element, location: { x, y }}) => {
           if (element === 'dirt') {
             return <Dirt key={`${x}${y}`} x={x} y={y} />;
           }
@@ -28,7 +28,7 @@ function Elements({ elements }: Props) {
           }
 
           return null;
-        }))
+        })
       }
     </ParticleContainer>
 

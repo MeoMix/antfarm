@@ -15,10 +15,10 @@ import type { Point } from './Point';
 import type { Ant } from './createAnt';
 import SelectedAntDialog from './components/SelectedAntDialog';
 
-const VERSION = '0.0.4';
+const VERSION = '0.0.3';
 
 const WORLD_WIDTH = 144;
-const WORLD_HEIGHT = 81 * 3;
+const WORLD_HEIGHT = 81;
 const TICK_COUNT_BATCH_SIZE = 500;
 
 function App() {
@@ -52,9 +52,9 @@ function App() {
     if (!savedWorld) {
       return createNewWorld();
     }
-
-    const { version, ...world } = savedWorld;
-    return version === VERSION ? world : createNewWorld();
+    return createNewWorld();
+    // const { version, ...world } = savedWorld;
+    // return version === VERSION ? world : createNewWorld();
   });
 
   // TODO: this still isn't implemented well. would be better to pause a brief period of time between runs
