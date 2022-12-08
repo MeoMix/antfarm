@@ -1,4 +1,4 @@
-import { moveAnts } from './util';
+import { moveAnts } from './systems/moveAnts';
 import config from './config';
 import createWorld from './createWorld';
 

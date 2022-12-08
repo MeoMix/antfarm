@@ -5,7 +5,6 @@ import { Settings as SettingsIcon, TouchApp as TouchAppIcon } from '@mui/icons-m
 import createWorld from './createWorld';
 import type { Element } from './createWorld';
 import config, { Settings } from './config';
-import { moveAnts, sandFall } from './util';
 import SettingsDialog from './components/SettingsDialog';
 import WorldContainer from './components/WorldContainer';
 import PendingTickCountDialog from './components/PendingTickCountDialog';
@@ -14,6 +13,8 @@ import type { Action } from './components/TouchAppDialog';
 import type { Point } from './Point';
 import type { Ant } from './createAnt';
 import SelectedAntDialog from './components/SelectedAntDialog';
+import { sandFall } from './systems/sandFall';
+import { moveAnts } from './systems/moveAnts';
 
 const VERSION = '0.0.3';
 
