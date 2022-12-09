@@ -13,7 +13,7 @@ import type { Action } from './components/TouchAppDialog';
 import type { Point } from './Point';
 import type { Ant } from './createAnt';
 import SelectedAntDialog from './components/SelectedAntDialog';
-import { sandFall } from './systems/sandFall';
+import { gravitySystem } from './systems/gravitySystem';
 import { moveAnts } from './systems/moveAnts';
 
 const VERSION = '0.0.3';
@@ -73,15 +73,15 @@ function App() {
       let updatedWorld = JSON.parse(JSON.stringify(world));
       let tickCount = 0;
       while (tickCount < pendingTickCount && tickCount < TICK_COUNT_BATCH_SIZE) {
+        gravitySystem(updatedWorld, settings);
         updatedWorld.ants = moveAnts(updatedWorld, settings.probabilities);
-        sandFall(updatedWorld, settings.compactSandDepth);
         tickCount++
       }
       setPendingTickCount(pendingTickCount => pendingTickCount - tickCount);
 
       return updatedWorld;
     });
-  }, [pendingTickCount, settings.probabilities, settings.compactSandDepth])
+  }, [pendingTickCount, settings])
 
   // Main loop for updating world state. Try to run every N ms (configurable), play catch-up if multiple
   // ticks are pending. This can occur in various scenarios. For example, if configured tick rate is very low,

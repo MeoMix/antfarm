@@ -3,7 +3,7 @@ import type { Settings } from '../config';
 import { getTimer, facingAngles } from '../createAnt';
 import { add as addPoint } from '../Point';
 import type { World } from '../createWorld';
-import { getDelta, getElementType, isWithinBounds, loosenNeighbors, loosenOneSand, updateElement } from '../util';
+import { getDelta, getElementType, isWithinBounds, loosenNeighbors, loosenOneSand, updateElementElement } from '../util';
 
 /** Returns true if ant can be in the given location by confirming it exists within air and has solid footing */
 function isValidLocation(ant: Readonly<Ant>, world: World) {
@@ -68,7 +68,7 @@ function dig(ant: Readonly<Ant>, isForcedForward: boolean, world: World) {
 
   const element = getElementType(digLocation, world.elements);
   if (element === 'dirt' || element === 'sand') {
-    updateElement(digLocation, 'air', world.elements);
+    updateElementElement(digLocation, 'air', world.elements);
     loosenNeighbors(digLocation, world);
 
     return { ...ant, behavior: 'carrying' as const, timer: getTimer('carrying') };
@@ -119,8 +119,9 @@ function wander(ant: Readonly<Ant>, world: World, probabilities: Settings['proba
 }
 
 function drop(ant: Readonly<Ant>, world: World) {
+  // TODO: feel like ant should drop sand in front of them not on themselves but need to consider ramifications
   if (getElementType(ant.location, world.elements) === 'air') {
-    updateElement(ant.location, 'sand', world.elements);
+    updateElementElement(ant.location, 'sand', world.elements);
     loosenOneSand(ant.location, world);
 
     return { ...ant, behavior: 'wandering' as const, timer: getTimer('wandering') };
@@ -145,8 +146,6 @@ export function moveAnts(world: World, probabilities: Settings['probabilities'])
       return movingAnt;
     }
 
-    // TODO: I think it's weird gravity check doesn't apply until timer is up.
-    /* Gravity check. */
     const footDelta = getDelta(movingAnt.facing, getRotatedAngle(movingAnt.angle, 1));
     const f = addPoint(movingAnt.location, footDelta);
 
@@ -154,7 +153,7 @@ export function moveAnts(world: World, probabilities: Settings['probabilities'])
       /* Whoops, whatever we were walking on disappeared. */
       const fallPoint = addPoint(movingAnt.location, { x: 0, y: 1 });
       if (getElementType(fallPoint, world.elements) === 'air') {
-        return { ...movingAnt, location: fallPoint };
+        return movingAnt;
       } else {
         /* Can't fall?  Try turning. */
         return turn(movingAnt, world);

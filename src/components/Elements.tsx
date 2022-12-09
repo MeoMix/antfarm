@@ -18,13 +18,13 @@ function Elements({ elements }: Props) {
   return (
     <ParticleContainer maxSize={40000}>
       {
-        elements.map(({ element, location: { x, y }}) => {
+        elements.map(({ id, element, location: { x, y } }) => {
           if (element === 'dirt') {
-            return <Dirt key={`${x}${y}`} x={x} y={y} />;
+            return <Dirt key={id} x={x} y={y} />;
           }
 
           if (element === 'sand') {
-            return <Sand key={`${x}${y}`} x={x} y={y} />;
+            return <Sand key={id} x={x} y={y} />;
           }
 
           return null;

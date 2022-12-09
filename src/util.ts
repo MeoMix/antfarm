@@ -1,6 +1,6 @@
 import type { Point } from './Point';
 import type { Facing, Angle } from './createAnt';
-import type { World, Element } from './createWorld';
+import type { World, Element, ElementAssemblage } from './createWorld';
 
 // TODO: getDelta should probably not be coupled to 'facing'?
 export function getDelta(facing: Facing, angle: Angle): Point {
@@ -20,20 +20,40 @@ export function isWithinBounds({ x, y }: Point, { width, height }: World) {
   return x >= 0 && x < width && y >= 0 && y < height;
 }
 
-// TODO: prefer this method not existing and always rely on an element swap - there shouldn't be destruction of elements?
-export function updateElement(location: Point, element: Element, elements: World['elements']) {
+// TODO: maybe combine these into just updateElement
+export function updateElement(location: Point, element: ElementAssemblage, elements: World['elements']) {
   const index = elements.findIndex(element => element.location.x === location.x && element.location.y === location.y);
 
   if (index === -1) {
     throw new Error('updateElement expects to find an element');
   }
 
-  elements[index] = { location: { x: location.x, y: location.y }, element };
+  elements[index] = { ...element, location: { x: location.x, y: location.y } };
+}
+
+export function updateElementElement(location: Point, element: Element, elements: World['elements']) {
+  const index = elements.findIndex(element => element.location.x === location.x && element.location.y === location.y);
+
+  if (index === -1) {
+    throw new Error('updateElement expects to find an element');
+  }
+
+  elements[index] = { location: { x: location.x, y: location.y }, element, active: elements[index].active, id: elements[index].id, };
+}
+
+export function updateElementActive(location: Point, active: boolean, elements: World['elements']) {
+  const index = elements.findIndex(element => element.location.x === location.x && element.location.y === location.y);
+
+  if (index === -1) {
+    throw new Error('updateElement expects to find an element');
+  }
+
+  elements[index] = { location: { x: location.x, y: location.y }, element: elements[index].element, active, id: elements[index].id, };
 }
 
 export function swapElements(locationA: Point, locationB: Point, elements: World['elements']) {
-  const elementA = getElementType(locationA, elements);
-  const elementB = getElementType(locationB, elements);
+  const elementA = getElement(locationA, elements);
+  const elementB = getElement(locationB, elements);
 
   updateElement(locationA, elementB!, elements);
   updateElement(locationB, elementA!, elements);
@@ -70,10 +90,15 @@ export function loosenNeighbors(location: Point, world: World) {
 }
 
 export function loosenOneSand({ x, y }: Point, world: World) {
-  /* Check if there's already loose sand at this location. */
-  if (world.fallingSandLocations.find(fallingSandLocation => fallingSandLocation.x === x && fallingSandLocation.y === y)) {
-    return;
-  }
+  world.elements = world.elements.map(element => {
+    if (element.location.x === x && element.location.y === y) {
+      if (element.element !== 'sand') {
+        throw new Error('expected sand');
+      }
 
-  world.fallingSandLocations.push({ x, y });
+      return { ...element, active: true };
+    }
+
+    return element;
+  })
 }

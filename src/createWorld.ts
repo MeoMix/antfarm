@@ -1,3 +1,4 @@
+import { uniqueId } from 'lodash';
 import type { Point } from './Point';
 
 import createAnt from './createAnt';
@@ -5,9 +6,10 @@ import type { Ant } from './createAnt';
 import namesJson from './names.json';
 
 export type ElementAssemblage = {
-  // id: number;
+  id: string; // guid
   location: Point;
   element: Element;
+  active: boolean;
 };
 
 export type Element = 'dirt' | 'sand' | 'air' | 'food';
@@ -16,7 +18,6 @@ export type World = {
   width: Readonly<number>;
   height: Readonly<number>;
   elements: Readonly<ElementAssemblage>[];
-  fallingSandLocations: Readonly<Point>[];
   surfaceLevel: Readonly<number>;
   ants: Readonly<Ant[]>,
 }
@@ -26,8 +27,21 @@ function createWorld(width: number, height: number, dirtPercent: number, antCoun
 
   const elements = Array.from({ length: height }, (_, rowIndex) => {
     return Array.from({ length: width }, (_, columnIndex) => {
-      const element = rowIndex <= surfaceLevel ? 'air' : 'dirt' as const;
-      return { location: { x: columnIndex, y: rowIndex }, element } as const;
+      let element: Element = rowIndex <= surfaceLevel ? 'air' : 'dirt';
+      let active = false;
+
+      // TODO: write tests that test sand fall lol
+      if (rowIndex === 0 && columnIndex === 0) {
+        element = 'sand';
+        active = true;
+      }
+
+      return {
+        location: { x: columnIndex, y: rowIndex },
+        element,
+        active,
+        id: uniqueId('element_'),
+      } as const;
     });
   }).flat();
 
@@ -55,14 +69,11 @@ function createWorld(width: number, height: number, dirtPercent: number, antCoun
     return createAnt(x, y, 'wandering', facing, 0, name);
   });
 
-  const fallingSandLocations = [] as Point[];
-
   return {
     width,
     height,
     elements,
     surfaceLevel,
-    fallingSandLocations,
     ants,
   }
 }

@@ -31,11 +31,12 @@ export type Ant = {
   angle: Angle,
   timer: number;
   name: string;
+  active: true;
 }
 
 const BehaviorTimingFactors = {
   wandering: 4,
-  carrying:  5,
+  carrying: 5,
 }
 
 export const getTimer = (behavior: Behavior) => BehaviorTimingFactors[behavior] + Math.floor((Math.random() * 3)) - 1;
@@ -50,6 +51,7 @@ function createAnt(x: number, y: number, behavior: Behavior, facing: Facing, ang
     timer: getTimer(behavior),
     // TODO: This is basically a view-only property and shouldn't be tacked onto the model, but I am laaaazy.
     name,
+    active: true,
   };
 }
 
