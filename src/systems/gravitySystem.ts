@@ -21,13 +21,13 @@ function getSandDepth(x: number, y: number, elements: World['elements']) {
 function antGravitySystem(world: World) {
   const activeAnts = world.ants.filter(ant => ant.active);
 
-  // Ants can have air below them and not fall into it (unlike sand) because they can cling to the sides of elements
+  // Ants can have air below them and not fall into it (unlike sand) because they can cling to the sides of sand and dirt.
+  // However, if they are clinging to sand/dirt, and that sand/dirt disappears, then they're out of luck and gravity takes over.
   activeAnts.forEach(ant => {
     const footDelta = getDelta(ant.facing, getRotatedAngle(ant.angle, 1));
     const f = addPoint(ant.location, footDelta);
 
     if (getElementType(f, world.elements) === 'air') {
-      /* Whoops, whatever we were walking on disappeared. */
       const fallPoint = addPoint(ant.location, { x: 0, y: 1 });
       if (getElementType(fallPoint, world.elements) === 'air') {
         ant.location = fallPoint;
